@@ -73,11 +73,13 @@ interface Item {
   id: string;                    // Encoded item ID
   appid: number;                 // Game app ID (730 or 252490)
 
-  // Description
-  name: string;                  // Display name (e.g. "AK-47 | Redline")
-  marketHashName: string;        // Full market name (e.g. "AK-47 | Redline (Field-Tested)")
-  type: string;                  // Item type (e.g. "Rifle", "Knife")
-  iconUrl: string;               // Steam image hash (use with Steam CDN base URL)
+  // Description — omitted on bare withdraw items where AssetPay has no Steam-side
+  // metadata yet (you supplied only itemId + price). Always present for inventory,
+  // market, and post-completion trade items.
+  name?: string;                 // Display name (e.g. "AK-47 | Redline")
+  marketHashName?: string;       // Full market name (e.g. "AK-47 | Redline (Field-Tested)")
+  type?: string;                 // Item type (e.g. "Rifle", "Knife")
+  iconUrl?: string;              // Steam image hash (use with Steam CDN base URL)
 
   // Trade state
   tradable: boolean;             // Whether the item can be traded
@@ -114,7 +116,12 @@ The marketplace offer carried on an `Item.offer`:
 ```typescript
 interface ItemOffer {
   price: number;                 // Offer price in USD
-  reference: string;             // Marketplace listing reference (used internally)
+  reference?: string;            // Parent product reference (e.g. "0010f8d48278ccb8")
+                                 //   — the id you query /market/item with. The
+                                 //   listing-specific id is the surrounding Item.id.
+                                 //   Present on market/inventory items. Omitted on
+                                 //   freshly-initiated withdraw items; backfilled
+                                 //   from callbacks as the trade progresses.
   delivery?: DeliveryMode;       // "standard" or "instant" (market items only)
   maxAmount?: number;            // Max quantity for stackable items (inventory only)
   accepted?: boolean;            // Whether the item is accepted for deposit (deposit-side inventory only)

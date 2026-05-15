@@ -54,7 +54,7 @@ The body of every state-change callback is the full trade object directly:
 The "event" you're handling is `trade.status` — there is no separate `event` field on the body.
 
 <Note>
-The withdrawal approval callback (`initiated`) uses a slightly different envelope — see [The `initiated` callback for withdrawals](#the-initiated-callback-for-withdrawals) below.
+The withdrawal `initiated` callback acts as an approval gate — your handler must explicitly approve or reject it. See [The `initiated` callback for withdrawals](#the-initiated-callback-for-withdrawals) below.
 </Note>
 
 ## Signature Verification
@@ -180,21 +180,15 @@ Withdrawals do **not** have a separate `active` state — they jump from `initia
 
 This is the most important callback in the withdrawal flow. When a withdrawal is initiated, AssetPay sends you this callback **before purchasing anything**. Your backend decides whether the withdrawal proceeds.
 
-The approval callback has a different body shape from regular state callbacks:
+The approval callback body has the same shape as every other state callback:
 
 ```json
 {
-  "kind": "withdraw",
-  "event": "initiated",
-  "timestamp": "2026-03-11T10:00:00.000Z",
-  "tradeId": "trade-uuid",
-  "data": {
-    "trade": { ... }
-  }
+  "trade": { ... }
 }
 ```
 
-The signature header and signing rules are identical to regular callbacks — same `X-AssetPay-Signature: t=...,id=...,s=...` format, same `<deliveryId>.<timestamp>.<rawBody>` HMAC input.
+Identify this as the approval gate by checking `trade.type === "withdraw"` and `trade.status === "initiated"`. The signature header and signing rules are also identical to regular callbacks — same `X-AssetPay-Signature: t=...,id=...,s=...` format, same `<deliveryId>.<timestamp>.<rawBody>` HMAC input.
 
 Your handler should:
 1. Verify the signature

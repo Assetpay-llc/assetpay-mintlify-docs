@@ -33,14 +33,14 @@ api-key: ap_...
 |-----------|------|----------|-------------|
 | `tradeUrl` | string | Yes | Steam trade URL of the account receiving the items |
 | `items` | array | Yes | Items to buy (min 1, max 50) |
-| `items[].itemId` | string | Yes | Listing ID from `/secure/market/item` |
+| `items[].itemId` | string | Yes | Specific listing ID from `/secure/market/item` |
 | `items[].price` | number | Yes | Purchase price in USD (max $100,000). Must equal the current listing price. |
 | `game` | string | No | `"730"` or `"252490"`. Defaults to `"730"`. |
 | `externalId` | string | No | Your unique tracking ID |
 
 ## Response
 
-Returns a full [`Trade`](/reference/types#trade) object with `source: "self"`.
+Returns a full [`Trade`](/reference/types#trade) object with `source: "self"`. On `initiated`, each item only carries the data you submitted (`itemId`, `offer.price`) — Steam-side fields like `name`, `marketHashName`, `type`, and `iconUrl` are **omitted** until they resolve.
 
 ```json
 {
@@ -56,7 +56,16 @@ Returns a full [`Trade`](/reference/types#trade) object with `source: "self"`.
     "merchantId": "merchant-uuid",
     "clientSteamID": "76561198012345678",
     "clientTradeUrl": "https://steamcommunity.com/tradeoffer/new/?partner=12345&token=ABCDEFGH",
-    "items": [ /* ... */ ],
+    "items": [
+      {
+        "id": "e5f6g7h8-...",
+        "appid": 730,
+        "tradable": true,
+        "amount": 1,
+        "status": "initiated",
+        "offer": { "price": 45.00 }
+      }
+    ],
     "totalPrice": 45.00,
     "createdAt": "2026-05-14T12:00:00.000Z",
     "updatedAt": "2026-05-14T12:00:00.000Z"

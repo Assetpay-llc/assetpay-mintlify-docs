@@ -78,14 +78,14 @@ Authorization: CLIENT_TOKEN
     "items": [
       {
         "id": "e5f6g7h8-...",
-        "name": "AWP | Asiimov",
-        "marketHashName": "AWP | Asiimov (Field-Tested)",
+        "appid": 730,
+        "tradable": true,
+        "amount": 1,
+        "status": "initiated",
         "offer": {
           "price": 45.00,
-          "reference": "ref_market_789",
-          "delivery": "standard"
-        },
-        "status": "initiated"
+          "reference": "ref_market_789"
+        }
       }
     ],
     "totalPrice": 45.00,
@@ -95,11 +95,13 @@ Authorization: CLIENT_TOKEN
 }
 ```
 
+On a freshly initiated withdraw the items only carry the data you submitted (`itemId`, `offer.price`) — Steam-side fields like `name`, `marketHashName`, `type`, and `iconUrl` are omitted until they resolve.
+
 ## The `initiated` callback
 
 This is the most important callback in the entire system. When a user initiates a withdrawal, AssetPay does **not** start purchasing immediately. Instead, it sends an `initiated` callback to your backend and waits for your response.
 
-The approval callback uses a slightly different envelope than regular state callbacks — see [Callbacks](/guides/callbacks#the-initiated-callback-for-withdrawals) for the exact body shape and signature format.
+The approval callback uses the same `{ trade: ... }` body shape as every other state callback — see [Callbacks](/guides/callbacks#the-initiated-callback-for-withdrawals) for handling details and signature format.
 
 Your backend should:
 1. Verify the `X-AssetPay-Signature` header

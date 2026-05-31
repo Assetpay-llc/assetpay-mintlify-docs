@@ -1,0 +1,108 @@
+---
+title: "Quick Withdrawal"
+description: "Buy the N cheapest listings of an item up to a per-unit price ceiling."
+---
+
+# POST /client/trading/withdraw/quick
+
+Initiates a **quick** withdrawal. Instead of naming specific listings, you pass a catalog `itemId`, a per-unit price ceiling, and an amount — AssetPay buys the cheapest available listings at or below your ceiling and delivers them to the user via Steam trade offer.
+
+**CS2 only.** Rust is not supported and is rejected with `QUICK_BUY_UNSUPPORTED_GAME` (32).
+
+**Authentication:** Client Token (`Authorization` header)
+
+## Request
+
+```http
+POST https://api.assetpay.gg/client/trading/withdraw/quick
+Content-Type: application/json
+Authorization: CLIENT_TOKEN
+
+{
+  "itemId": "dc3c4460d814ac35",
+  "maxPrice": 67.39,
+  "amount": 3,
+  "delivery": "instant",
+  "externalId": "qb_unique_789"
+}
+```
+
+### Body Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `itemId` | string | Yes | Catalog item id (the `id` from `/client/market/suggestions` or `itemId` from `/secure/prices`). 5–256 chars. |
+| `maxPrice` | number | Yes | **Gross** per-unit price ceiling in USD (fee-inclusive — the same basis as the `withdraw` price in `/secure/prices`). Max \$100,000. AssetPay backs its fee out of this to get the sourcing ceiling sent to the marketplace. |
+| `amount` | number | Yes | How many units to buy. Integer, 1–200. |
+| `delivery` | string | No | `"standard"` or `"instant"`. Defaults to `"standard"`. |
+| `game` | string | No | Must be `"730"` (CS2). Defaults to `"730"`. |
+| `externalId` | string | No | Your unique tracking ID (max 128 chars). Must be unique per trade. |
+
+## Response
+
+```json
+{
+  "requestId": "...",
+  "success": true,
+  "data": {
+    "id": "trade-uuid",
+    "type": "withdraw",
+    "source": "client",
+    "status": "initiated",
+    "game": "730",
+    "externalId": "qb_unique_789",
+    "merchantId": "merchant-uuid",
+    "clientUserId": "client-uuid",
+    "clientSteamID": "76561198012345678",
+    "clientTradeUrl": "https://steamcommunity.com/tradeoffer/new/?partner=...",
+    "items": [
+      { "id": "dc3c4460d814ac35", "appid": 730, "tradable": true, "amount": 1, "status": "initiated", "offer": { "price": 67.39, "delivery": "instant" } },
+      { "id": "dc3c4460d814ac35", "appid": 730, "tradable": true, "amount": 1, "status": "initiated", "offer": { "price": 67.39, "delivery": "instant" } },
+      { "id": "dc3c4460d814ac35", "appid": 730, "tradable": true, "amount": 1, "status": "initiated", "offer": { "price": 67.39, "delivery": "instant" } }
+    ],
+    "totalPrice": 202.17,
+    "createdAt": "2026-05-31T10:00:00.000Z",
+    "updatedAt": "2026-05-31T10:00:00.000Z"
+  }
+}
+```
+
+The response is a full [Trade](/reference/types#trade) object. Unlike the deterministic [`/client/trading/withdraw`](/api-reference/trading/withdraw), the actual filled listings are **not known yet** at creation, so:
+
+- `items` contains **one pre-filled row per requested unit** (so `amount: 3` returns 3 rows), each carrying the ceiling `price` and `delivery` — the same minimal shape as a standard buy item. The catalog `itemId` is used as each row's placeholder `id` until it is **bound** to a real listing.
+- `totalPrice` is the **worst-case lock** (`amount × maxPrice`, after rounding), not the final spend.
+
+As the marketplace fills the order, each row is bound to a real listing — its `id` becomes the listing id and its price updates to the actual fill — and the trade settles asynchronously. Fills may be **fewer than requested** if supply runs out at your ceiling; those unfilled rows go to `failed`, and the unfilled units plus any below-ceiling savings are refunded. Poll `GET /client/trades/{id}` or rely on callbacks / the WebSocket feed for the final view. Once settled, `totalPrice` reflects the **actual** amount spent on the filled items.
+
+## How it works
+
+1. **Lock** — the worst-case total (`amount × maxPrice`) is locked from your merchant balance up front.
+2. **Approval** — an `initiated` callback fires to your backend before anything is purchased (same as the standard withdraw). Approve with `2xx`, reject with `4xx`.
+3. **Fill** — AssetPay calls the marketplace, which buys the cheapest `amount` listings at or below the sourcing ceiling. Partial fills are normal.
+4. **Settle** — filled items settle (sourcing + your fee); the unfilled remainder and below-ceiling savings are refunded to your balance.
+
+<Warning>
+Quick withdrawals require your merchant account to have an active callback URL configured. Calling this endpoint without one immediately fails with `MERCHANT_NO_CALLBACK_URL` (1705).
+</Warning>
+
+## Rate Limits
+
+| Merchant Status | Limit |
+|----------------|-------|
+| Verified | 500 requests / min |
+| Unverified | 5 requests / min |
+
+Shared across all clients of the same merchant.
+
+## Errors
+
+| Code | Key | When |
+|------|-----|------|
+| 1 | `EXTERNAL_ID_EXISTS` | The `externalId` is already in use |
+| 32 | `QUICK_BUY_UNSUPPORTED_GAME` | `game` is not CS2 (`"730"`) |
+| 12 | `MERCHANT_BALANCE_LOW` | Your merchant balance can't cover the worst-case lock |
+| 13 | `INVALID_TRADEURL` | User's trade URL is invalid |
+| 20 | `WITHDRAW_IN_PROGRESS` | Another withdrawal is already processing for this user |
+| 1001 | `VALIDATION_FAILED` | `amount` out of range (1–200), `maxPrice` ≤ 0, or other invalid input |
+| 1601 | `INVALID_AMOUNT` | The derived sourcing ceiling or lock total was zero or negative |
+| 1705 | `MERCHANT_NO_CALLBACK_URL` | Merchant has no active callback URL configured |

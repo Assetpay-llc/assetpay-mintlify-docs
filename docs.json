@@ -80,6 +80,7 @@
             "pages": [
               "api-reference/trading/deposit",
               "api-reference/trading/withdraw",
+              "api-reference/trading/withdraw-quick",
               "api-reference/trading/cancel-withdraw-item"
             ]
           },
@@ -91,6 +92,7 @@
               "api-reference/secure/inventory",
               "api-reference/secure/sell",
               "api-reference/secure/buy",
+              "api-reference/secure/buy-quick",
               "api-reference/secure/get-market",
               "api-reference/secure/get-item-listings",
               "api-reference/secure/get-trades",

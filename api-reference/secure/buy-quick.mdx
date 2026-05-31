@@ -1,0 +1,95 @@
+---
+title: "Quick Buy (Self-Trade)"
+description: "Merchant buys the N cheapest listings of an item up to a price ceiling, delivered to a Steam account."
+---
+
+# POST /secure/buy/quick
+
+Merchant-facing equivalent of [`POST /client/trading/withdraw/quick`](/api-reference/trading/withdraw-quick). Instead of naming specific listings, you pass a catalog `itemId`, a per-unit ceiling, and an amount — AssetPay buys the cheapest available listings at or below your ceiling and delivers them to the supplied `tradeUrl`. The merchant's USD wallet is debited.
+
+**CS2 only.** Rust is rejected with `QUICK_BUY_UNSUPPORTED_GAME` (32).
+
+**Authentication:** Merchant API Key (`api-key` header)
+**Scope:** `CORE_ACCESS`
+
+## Request
+
+```http
+POST https://api.assetpay.gg/secure/buy/quick
+Content-Type: application/json
+api-key: ap_...
+
+{
+  "tradeUrl": "https://steamcommunity.com/tradeoffer/new/?partner=12345&token=ABCDEFGH",
+  "itemId": "dc3c4460d814ac35",
+  "maxPrice": 67.39,
+  "amount": 3,
+  "delivery": "instant",
+  "externalId": "self_qb_001"
+}
+```
+
+### Body Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `tradeUrl` | string | Yes | Steam trade URL of the account receiving the items |
+| `itemId` | string | Yes | Catalog item id (the `itemId` from `/secure/prices` or `id` from `/secure/market/suggestions`). 5–256 chars. |
+| `maxPrice` | number | Yes | **Gross** per-unit price ceiling in USD (fee-inclusive — same basis as the `withdraw` price in `/secure/prices`). Max $100,000. |
+| `amount` | number | Yes | How many units to buy. Integer, 1–200. |
+| `delivery` | string | No | `"standard"` or `"instant"`. Defaults to `"standard"`. |
+| `game` | string | No | Must be `"730"` (CS2). Defaults to `"730"`. |
+| `externalId` | string | No | Your unique tracking ID |
+
+## Response
+
+Returns a full [`Trade`](/reference/types#trade) object with `source: "self"`. As with the client quick withdrawal, `items` contains **one pre-filled row per requested unit** (carrying the ceiling `price` + `delivery`, same minimal shape as a standard buy item) and `totalPrice` is the **worst-case lock** (`amount × maxPrice`). Each row is bound to a real listing as fills arrive; unfilled rows go to `failed` and the unfilled / below-ceiling remainder is refunded — all asynchronously via the trade webhook. Once settled, `totalPrice` reflects the actual spend.
+
+```json
+{
+  "requestId": "...",
+  "success": true,
+  "data": {
+    "id": "trade-uuid",
+    "type": "withdraw",
+    "source": "self",
+    "status": "initiated",
+    "game": "730",
+    "externalId": "self_qb_001",
+    "merchantId": "merchant-uuid",
+    "clientSteamID": "76561198012345678",
+    "clientTradeUrl": "https://steamcommunity.com/tradeoffer/new/?partner=12345&token=ABCDEFGH",
+    "items": [
+      { "id": "dc3c4460d814ac35", "appid": 730, "tradable": true, "amount": 1, "status": "initiated", "offer": { "price": 67.39, "delivery": "instant" } },
+      { "id": "dc3c4460d814ac35", "appid": 730, "tradable": true, "amount": 1, "status": "initiated", "offer": { "price": 67.39, "delivery": "instant" } },
+      { "id": "dc3c4460d814ac35", "appid": 730, "tradable": true, "amount": 1, "status": "initiated", "offer": { "price": 67.39, "delivery": "instant" } }
+    ],
+    "totalPrice": 202.17,
+    "createdAt": "2026-05-31T12:00:00.000Z",
+    "updatedAt": "2026-05-31T12:00:00.000Z"
+  }
+}
+```
+
+## How the wallet debit works
+
+The merchant's available wallet balance must cover the worst-case lock (`amount × maxPrice`) at the time of the call. The funds are locked immediately; on each fill the sourcing portion settles to HOUSE and the AssetPay fee to HOUSE_FEES, and the unfilled units plus any below-ceiling savings are released back to your balance.
+
+## The `initiated` approval callback also fires
+
+`/secure/buy/quick` reuses the same approval pipeline as the client quick withdrawal. After the trade is created (status `initiated`), AssetPay sends an [approval callback](/guides/callbacks#the-initiated-callback-for-withdrawals) with `trade.source === "self"`. The trade does not proceed until you respond — note the callback carries the **pre-filled rows** (each at the ceiling price) and the worst-case `totalPrice`, since the actual fills aren't known yet.
+
+- To auto-approve your own self-trades, return `2xx` whenever `trade.source === "self"`.
+- To reject, respond with `4xx`; the trade is failed and the wallet lock is released.
+- Self-trade quick buys still **require an active callback URL** — without one the call fails immediately with `MERCHANT_NO_CALLBACK_URL` (1705).
+
+## Rate Limits
+
+| Merchant Status | Limit |
+|----------------|-------|
+| Verified | 5,000 requests / min |
+| Unverified | 50 requests / min |
+
+## Errors
+
+Same set as [`POST /client/trading/withdraw/quick`](/api-reference/trading/withdraw-quick#errors). Common: `QUICK_BUY_UNSUPPORTED_GAME` (32, non-CS2), `MERCHANT_BALANCE_LOW` (12), `MERCHANT_NO_CALLBACK_URL` (1705), `INVALID_TRADEURL` (13), `VALIDATION_FAILED` (1001).

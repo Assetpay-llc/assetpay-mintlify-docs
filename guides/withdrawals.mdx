@@ -161,6 +161,25 @@ In rare cases, a completed withdrawal can be reversed. This happens when either 
 
 When a withdrawal is reverted, your merchant wallet is automatically refunded by AssetPay.
 
+## Quick Withdrawals
+
+If you don't want to pick specific listings, use **quick withdrawal**: pass a catalog `itemId`, a per-unit price ceiling, and an amount, and AssetPay buys the cheapest available listings at or below your ceiling. **CS2 only.**
+
+```http
+POST https://api.assetpay.gg/client/trading/withdraw/quick
+Content-Type: application/json
+Authorization: CLIENT_TOKEN
+
+{ "itemId": "dc3c4460d814ac35", "maxPrice": 67.39, "amount": 3, "delivery": "instant" }
+```
+
+`maxPrice` is the **gross** per-unit ceiling (fee-inclusive — the same `withdraw` price returned by `/secure/prices`). It differs from the standard withdrawal in two ways:
+
+- **Pre-filled rows.** The response returns one item row per requested unit (same minimal shape as a normal buy — id, ceiling `price`, `delivery`), and `totalPrice` set to the worst-case lock (`amount × maxPrice`). Each row is bound to a real listing as fills arrive; the trade settles asynchronously — watch via callbacks or the WebSocket feed.
+- **Partial fills are normal.** If fewer than `amount` listings are available at or below your ceiling, AssetPay buys what it can; the unfilled rows go to `failed`, the unfilled units and any below-ceiling savings are refunded to your balance, and `totalPrice` is trued up to the actual spend once settled.
+
+Everything else — the `initiated` approval callback, balance locking, per-item status — works exactly like the standard withdrawal. See the API reference for [`POST /client/trading/withdraw/quick`](/api-reference/trading/withdraw-quick) (and the merchant self-trade variant [`POST /secure/buy/quick`](/api-reference/secure/buy-quick)).
+
 ## Cancelling a Withdrawal Item
 
 A user can cancel a withdrawal item that hasn't been delivered yet — for example when a CS2 purchase is taking too long to source. Call `POST /client/trading/withdraw/{tradeId}/items/{itemId}/cancel` with the trade ID and the item's `id`.

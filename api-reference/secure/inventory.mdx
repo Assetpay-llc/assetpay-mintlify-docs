@@ -78,8 +78,10 @@ Same shape as [`GET /client/inventory`](/api-reference/client/get-inventory). Ea
 
 | Code | Key | When |
 |------|-----|------|
-| 3 | `INVENTORY_FETCH_FAILED` | Couldn't load the Steam inventory (private, banned, rate-limited) |
+| 3 | `INVENTORY_FETCH_FAILED` | Couldn't load the Steam inventory (private or banned) |
 | 7 | `USER_NOT_TRADEABLE` | Steam returned 403 — inventory private or account can't trade |
 | 13 | `INVALID_TRADEURL` | The supplied `tradeUrl` is malformed |
+| 31 | `STEAM_UNAVAILABLE` | Steam temporarily couldn't serve the request; retry shortly |
+| 33 | `STEAM_RATE_LIMITED` | Steam is rate-limiting inventory reads; retry shortly |
 | 1010 | `NO_BOTS_AVAILABLE` | No Steam bots online; retry shortly |
 | 1011 | `FLEET_DEGRADED` | Steam fleet degraded; retry shortly |

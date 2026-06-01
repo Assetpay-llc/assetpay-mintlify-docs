@@ -761,7 +761,7 @@
     "/secure/prices": {
       "get": {
         "summary": "Get item prices and offers",
-        "description": "Returns the current offer-price book for a given game — the prices AssetPay will pay for each item type. Sourced from AssetPay's pricing service and refreshed periodically. Requires API key with CORE_ACCESS scope.",
+        "description": "Returns the current price book for a given game. Each item carries a `deposit` price (what AssetPay pays for the item) and a `withdraw` price (fee-inclusive buy price you can pass straight back to /secure/buy). For CS2, `withdraw` is split into `standard` and `instant` delivery and each entry includes the Skinshark catalog `itemId`; for Rust, `withdraw` is a single value. Withdraw prices already include your merchant fee. Requires API key with CORE_ACCESS scope.",
         "tags": [
           "Trading"
         ],
@@ -784,7 +784,7 @@
         ],
         "responses": {
           "200": {
-            "description": "List of item offers with prices",
+            "description": "Per-item deposit and withdraw prices",
             "content": {
               "application/json": {
                 "schema": {
@@ -807,20 +807,53 @@
                           {
                             "type": "object",
                             "properties": {
+                              "itemId": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ],
+                                "description": "Skinshark catalog item id, null when no withdraw floor"
+                              },
                               "marketHashName": {
                                 "type": "string"
                               },
                               "accepted": {
-                                "type": "boolean"
+                                "type": "boolean",
+                                "description": "Whether the item is accepted for deposit (deposit price > 0)"
                               },
-                              "price": {
-                                "type": "number"
+                              "deposit": {
+                                "type": "number",
+                                "description": "Deposit offer price in USD (what we pay for the item)"
+                              },
+                              "withdraw": {
+                                "type": "object",
+                                "properties": {
+                                  "standard": {
+                                    "type": [
+                                      "number",
+                                      "null"
+                                    ]
+                                  },
+                                  "instant": {
+                                    "type": [
+                                      "number",
+                                      "null"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "standard",
+                                  "instant"
+                                ],
+                                "description": "Fee-inclusive buy price per delivery mode; null when unavailable"
                               }
                             },
                             "required": [
+                              "itemId",
                               "marketHashName",
                               "accepted",
-                              "price"
+                              "deposit",
+                              "withdraw"
                             ]
                           },
                           {
@@ -830,19 +863,26 @@
                                 "type": "string"
                               },
                               "accepted": {
-                                "type": "boolean"
+                                "type": "boolean",
+                                "description": "Whether the item is accepted for deposit (deposit price > 0)"
                               },
-                              "price": {
-                                "type": "number"
+                              "deposit": {
+                                "type": "number",
+                                "description": "Deposit offer price in USD (what we pay for the item)"
                               },
-                              "maxAmount": {
-                                "type": "number"
+                              "withdraw": {
+                                "type": [
+                                  "number",
+                                  "null"
+                                ],
+                                "description": "Fee-inclusive buy price in USD; null when unavailable"
                               }
                             },
                             "required": [
                               "marketHashName",
                               "accepted",
-                              "price"
+                              "deposit",
+                              "withdraw"
                             ]
                           }
                         ]
@@ -1112,9 +1152,17 @@
         "parameters": [
           {
             "schema": {
-              "type": [
-                "boolean",
-                "null"
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "true",
+                    "false"
+                  ]
+                }
               ],
               "default": false
             },
@@ -1231,6 +1279,10 @@
                               "id": {
                                 "type": "string"
                               },
+                              "assetId": {
+                                "type": "string",
+                                "description": "Raw Steam assetid. Always present on inventory listings and deposit trade items. Omitted on withdraw items until the item lands in the recipient's Steam inventory."
+                              },
                               "appid": {
                                 "type": "integer"
                               },
@@ -1263,8 +1315,7 @@
                                   "completed",
                                   "failed",
                                   "canceled",
-                                  "reverted",
-                                  "escrow"
+                                  "reverted"
                                 ],
                                 "description": "Per-item status (withdrawals only)"
                               },
@@ -1619,6 +1670,65 @@
               }
             }
           },
+          "424": {
+            "description": "Failed Dependency - Steam could not serve the request (inventory fetch failed, temporarily unavailable, or rate-limited upstream). The caller is not at fault; retry shortly.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable error message(s)"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
           "429": {
             "description": "Too Many Requests - rate limit exceeded",
             "content": {
@@ -1883,8 +1993,7 @@
                             "completed",
                             "failed",
                             "canceled",
-                            "reverted",
-                            "escrow"
+                            "reverted"
                           ]
                         },
                         "game": {
@@ -1897,6 +2006,10 @@
                             "properties": {
                               "id": {
                                 "type": "string"
+                              },
+                              "assetId": {
+                                "type": "string",
+                                "description": "Raw Steam assetid. Always present on inventory listings and deposit trade items. Omitted on withdraw items until the item lands in the recipient's Steam inventory."
                               },
                               "appid": {
                                 "type": "integer"
@@ -1930,8 +2043,803 @@
                                   "completed",
                                   "failed",
                                   "canceled",
-                                  "reverted",
-                                  "escrow"
+                                  "reverted"
+                                ],
+                                "description": "Per-item status (withdrawals only)"
+                              },
+                              "marketPrice": {
+                                "type": "number",
+                                "description": "BUFF163 market price in USD"
+                              },
+                              "offer": {
+                                "type": "object",
+                                "properties": {
+                                  "price": {
+                                    "type": "number",
+                                    "description": "Offer price in USD"
+                                  },
+                                  "reference": {
+                                    "type": "string",
+                                    "description": "Marketplace product reference. On a market listing this is the parent itemId you queried `/market/item` with (hex, e.g. \"0010f8d48278ccb8\"); the listing-specific id is the `id` field above."
+                                  },
+                                  "delivery": {
+                                    "type": "string",
+                                    "enum": [
+                                      "standard",
+                                      "instant"
+                                    ],
+                                    "description": "Skinshark delivery mode"
+                                  },
+                                  "maxAmount": {
+                                    "type": "number"
+                                  },
+                                  "accepted": {
+                                    "type": "boolean"
+                                  }
+                                },
+                                "required": [
+                                  "price"
+                                ]
+                              },
+                              "exterior": {
+                                "type": "string"
+                              },
+                              "rarity": {
+                                "type": "string"
+                              },
+                              "color": {
+                                "type": "string"
+                              },
+                              "wear": {
+                                "type": "string"
+                              },
+                              "paintSeed": {
+                                "type": "integer"
+                              },
+                              "doppler": {
+                                "type": "object",
+                                "properties": {
+                                  "status": {
+                                    "type": "integer"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "paintIndex": {
+                                    "type": "integer"
+                                  }
+                                },
+                                "required": [
+                                  "name"
+                                ]
+                              },
+                              "fade": {
+                                "type": "object",
+                                "properties": {
+                                  "percentage": {
+                                    "type": "number"
+                                  }
+                                },
+                                "required": [
+                                  "percentage"
+                                ]
+                              },
+                              "hardened": {
+                                "type": "object",
+                                "properties": {
+                                  "status": {
+                                    "type": "integer"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "status",
+                                  "name"
+                                ]
+                              },
+                              "stickers": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "name": {
+                                      "type": "string"
+                                    },
+                                    "marketHashName": {
+                                      "type": "string"
+                                    },
+                                    "slot": {
+                                      "type": "integer"
+                                    },
+                                    "wear": {
+                                      "type": "number"
+                                    },
+                                    "iconUrl": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "name",
+                                    "slot",
+                                    "iconUrl"
+                                  ]
+                                }
+                              },
+                              "charm": {
+                                "type": "object",
+                                "properties": {
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "marketHashName": {
+                                    "type": "string"
+                                  },
+                                  "iconUrl": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "name",
+                                  "iconUrl"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "appid",
+                              "tradable"
+                            ]
+                          }
+                        },
+                        "totalPrice": {
+                          "type": "number",
+                          "description": "Total price in USD"
+                        },
+                        "preCredit": {
+                          "type": "number",
+                          "description": "Instant credit amount in USD"
+                        },
+                        "pendingCredit": {
+                          "type": "number",
+                          "description": "Amount held for hold period in USD"
+                        },
+                        "isInstant": {
+                          "type": "boolean",
+                          "description": "Whether instant crediting was requested"
+                        },
+                        "collateral": {
+                          "type": "object",
+                          "properties": {
+                            "merchant": {
+                              "type": "number"
+                            },
+                            "provider": {
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "merchant",
+                            "provider"
+                          ]
+                        },
+                        "holdEndDate": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "revertedBy": {
+                          "type": "string",
+                          "enum": [
+                            "supplier",
+                            "user"
+                          ]
+                        },
+                        "botInfo": {
+                          "type": "object",
+                          "properties": {
+                            "name": {
+                              "type": "string"
+                            },
+                            "avatar": {
+                              "type": "string"
+                            },
+                            "joined": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "steamId": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "name"
+                          ]
+                        },
+                        "error": {
+                          "type": "string"
+                        },
+                        "readyAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "type",
+                        "source",
+                        "merchantId",
+                        "clientUserId",
+                        "clientTradeUrl",
+                        "clientSteamID",
+                        "status",
+                        "game",
+                        "items",
+                        "totalPrice",
+                        "createdAt",
+                        "updatedAt"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - validation failed or invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable error message(s)"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable error message(s)"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable error message(s)"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "424": {
+            "description": "Failed Dependency - Steam could not serve the request (inventory fetch failed, temporarily unavailable, or rate-limited upstream). The caller is not at fault; retry shortly.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable error message(s)"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests - rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable error message(s)"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable error message(s)"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/secure/buy": {
+      "post": {
+        "summary": "Buy skins from the marketplace (merchant self-trade)",
+        "description": "Initiates a withdraw-style trade where AssetPay buys the requested listings from the upstream marketplace (Skinshark for CS2, RustSkins for Rust) and delivers them to the supplied tradeUrl. The merchant wallet is debited.",
+        "tags": [
+          "Trading"
+        ],
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "itemId": {
+                          "type": "string",
+                          "minLength": 5,
+                          "maxLength": 256
+                        },
+                        "price": {
+                          "type": "number",
+                          "exclusiveMinimum": 0,
+                          "maximum": 100000
+                        }
+                      },
+                      "required": [
+                        "itemId",
+                        "price"
+                      ]
+                    },
+                    "minItems": 1,
+                    "maxItems": 50
+                  },
+                  "game": {
+                    "type": "string",
+                    "default": "730"
+                  },
+                  "externalId": {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  "tradeUrl": {
+                    "type": "string",
+                    "pattern": "^https:\\/\\/steamcommunity\\.com\\/tradeoffer\\/new\\/\\?partner=\\d{1,10}&token=[A-Za-z0-9_-]{8}$"
+                  }
+                },
+                "required": [
+                  "items",
+                  "tradeUrl"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Trade record",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "deposit",
+                            "withdraw"
+                          ]
+                        },
+                        "source": {
+                          "type": "string",
+                          "enum": [
+                            "client",
+                            "self"
+                          ],
+                          "description": "Trade origin: \"client\" (end-user flow) or \"self\" (merchant self-trade)"
+                        },
+                        "externalId": {
+                          "type": "string"
+                        },
+                        "externalClientUserId": {
+                          "type": "string"
+                        },
+                        "merchantId": {
+                          "type": "string"
+                        },
+                        "clientUserId": {
+                          "type": "string"
+                        },
+                        "clientTradeUrl": {
+                          "type": "string"
+                        },
+                        "clientSteamID": {
+                          "type": "string"
+                        },
+                        "offerID": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "initiated",
+                            "pending",
+                            "active",
+                            "hold",
+                            "completed",
+                            "failed",
+                            "canceled",
+                            "reverted"
+                          ]
+                        },
+                        "game": {
+                          "type": "string"
+                        },
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "assetId": {
+                                "type": "string",
+                                "description": "Raw Steam assetid. Always present on inventory listings and deposit trade items. Omitted on withdraw items until the item lands in the recipient's Steam inventory."
+                              },
+                              "appid": {
+                                "type": "integer"
+                              },
+                              "name": {
+                                "type": "string",
+                                "description": "Omitted on bare withdraw items where AssetPay has no Steam-side metadata yet"
+                              },
+                              "marketHashName": {
+                                "type": "string"
+                              },
+                              "type": {
+                                "type": "string"
+                              },
+                              "iconUrl": {
+                                "type": "string"
+                              },
+                              "tradable": {
+                                "type": "boolean"
+                              },
+                              "amount": {
+                                "type": "number"
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": [
+                                  "initiated",
+                                  "pending",
+                                  "active",
+                                  "hold",
+                                  "completed",
+                                  "failed",
+                                  "canceled",
+                                  "reverted"
                                 ],
                                 "description": "Per-item status (withdrawals only)"
                               },
@@ -2484,10 +3392,10 @@
         }
       }
     },
-    "/secure/buy": {
+    "/secure/buy/quick": {
       "post": {
-        "summary": "Buy skins from the marketplace (merchant self-trade)",
-        "description": "Initiates a withdraw-style trade where AssetPay buys the requested listings from the upstream marketplace (Skinshark for CS2, RustSkins for Rust) and delivers them to the supplied tradeUrl. The merchant wallet is debited.",
+        "summary": "Quick-buy skins from the marketplace (merchant self-trade)",
+        "description": "Buys the N cheapest listings of a single item at or below a per-unit ceiling. CS2 only. `itemId` and the gross per-unit `maxPrice` (fee-inclusive) come from /secure/prices; `amount` is 1-200 and `delivery` is standard or instant. The trade starts empty and locks the worst-case total; the filled listings (possibly fewer than requested) and the refund of any unfilled / below-ceiling remainder settle asynchronously via the trade webhook.",
         "tags": [
           "Trading"
         ],
@@ -2502,29 +3410,28 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "items": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "itemId": {
-                          "type": "string",
-                          "minLength": 5,
-                          "maxLength": 256
-                        },
-                        "price": {
-                          "type": "number",
-                          "exclusiveMinimum": 0,
-                          "maximum": 100000
-                        }
-                      },
-                      "required": [
-                        "itemId",
-                        "price"
-                      ]
-                    },
-                    "minItems": 1,
-                    "maxItems": 50
+                  "itemId": {
+                    "type": "string",
+                    "minLength": 5,
+                    "maxLength": 256
+                  },
+                  "maxPrice": {
+                    "type": "number",
+                    "exclusiveMinimum": 0,
+                    "maximum": 100000
+                  },
+                  "amount": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 200
+                  },
+                  "delivery": {
+                    "type": "string",
+                    "enum": [
+                      "standard",
+                      "instant"
+                    ],
+                    "default": "standard"
                   },
                   "game": {
                     "type": "string",
@@ -2540,7 +3447,9 @@
                   }
                 },
                 "required": [
-                  "items",
+                  "itemId",
+                  "maxPrice",
+                  "amount",
                   "tradeUrl"
                 ],
                 "additionalProperties": false
@@ -2550,7 +3459,7 @@
         },
         "responses": {
           "200": {
-            "description": "Trade record",
+            "description": "Quick-buy trade initiated (items settle via webhook)",
             "content": {
               "application/json": {
                 "schema": {
@@ -2618,8 +3527,7 @@
                             "completed",
                             "failed",
                             "canceled",
-                            "reverted",
-                            "escrow"
+                            "reverted"
                           ]
                         },
                         "game": {
@@ -2632,6 +3540,10 @@
                             "properties": {
                               "id": {
                                 "type": "string"
+                              },
+                              "assetId": {
+                                "type": "string",
+                                "description": "Raw Steam assetid. Always present on inventory listings and deposit trade items. Omitted on withdraw items until the item lands in the recipient's Steam inventory."
                               },
                               "appid": {
                                 "type": "integer"
@@ -2665,8 +3577,7 @@
                                   "completed",
                                   "failed",
                                   "canceled",
-                                  "reverted",
-                                  "escrow"
+                                  "reverted"
                                 ],
                                 "description": "Per-item status (withdrawals only)"
                               },
@@ -3303,8 +4214,6 @@
           {
             "schema": {
               "type": "integer",
-              "minimum": 1,
-              "maximum": 1000,
               "default": 50
             },
             "required": false,
@@ -3341,6 +4250,10 @@
                               "id": {
                                 "type": "string"
                               },
+                              "assetId": {
+                                "type": "string",
+                                "description": "Raw Steam assetid. Always present on inventory listings and deposit trade items. Omitted on withdraw items until the item lands in the recipient's Steam inventory."
+                              },
                               "appid": {
                                 "type": "integer"
                               },
@@ -3373,8 +4286,7 @@
                                   "completed",
                                   "failed",
                                   "canceled",
-                                  "reverted",
-                                  "escrow"
+                                  "reverted"
                                 ],
                                 "description": "Per-item status (withdrawals only)"
                               },
@@ -3867,6 +4779,10 @@
                           "id": {
                             "type": "string"
                           },
+                          "assetId": {
+                            "type": "string",
+                            "description": "Raw Steam assetid. Always present on inventory listings and deposit trade items. Omitted on withdraw items until the item lands in the recipient's Steam inventory."
+                          },
                           "appid": {
                             "type": "integer"
                           },
@@ -3899,8 +4815,7 @@
                               "completed",
                               "failed",
                               "canceled",
-                              "reverted",
-                              "escrow"
+                              "reverted"
                             ],
                             "description": "Per-item status (withdrawals only)"
                           },
@@ -4487,8 +5402,7 @@
                                   "completed",
                                   "failed",
                                   "canceled",
-                                  "reverted",
-                                  "escrow"
+                                  "reverted"
                                 ]
                               },
                               "game": {
@@ -4501,6 +5415,10 @@
                                   "properties": {
                                     "id": {
                                       "type": "string"
+                                    },
+                                    "assetId": {
+                                      "type": "string",
+                                      "description": "Raw Steam assetid. Always present on inventory listings and deposit trade items. Omitted on withdraw items until the item lands in the recipient's Steam inventory."
                                     },
                                     "appid": {
                                       "type": "integer"
@@ -4534,8 +5452,7 @@
                                         "completed",
                                         "failed",
                                         "canceled",
-                                        "reverted",
-                                        "escrow"
+                                        "reverted"
                                       ],
                                       "description": "Per-item status (withdrawals only)"
                                     },
@@ -5045,7 +5962,7 @@
     "/secure/trades/{tradeId}": {
       "get": {
         "summary": "Get a single merchant self-trade",
-        "description": "Returns the full record (status, items, collateral, bot info, error) for one trade. Scoped to trades the calling merchant initiated via /secure/*.",
+        "description": "Returns the full record (status, items, collateral, bot info, error) for one trade. `tradeId` accepts either the internal trade id or the `externalId` you supplied at creation. Scoped to trades the calling merchant initiated via /secure/*.",
         "tags": [
           "Trading"
         ],
@@ -5058,9 +5975,11 @@
           {
             "schema": {
               "type": "string",
-              "minLength": 1
+              "minLength": 1,
+              "description": "Internal trade id or the externalId you supplied when creating the trade."
             },
             "required": true,
+            "description": "Internal trade id or the externalId you supplied when creating the trade.",
             "name": "tradeId",
             "in": "path"
           }
@@ -5135,8 +6054,7 @@
                             "completed",
                             "failed",
                             "canceled",
-                            "reverted",
-                            "escrow"
+                            "reverted"
                           ]
                         },
                         "game": {
@@ -5149,6 +6067,10 @@
                             "properties": {
                               "id": {
                                 "type": "string"
+                              },
+                              "assetId": {
+                                "type": "string",
+                                "description": "Raw Steam assetid. Always present on inventory listings and deposit trade items. Omitted on withdraw items until the item lands in the recipient's Steam inventory."
                               },
                               "appid": {
                                 "type": "integer"
@@ -5182,8 +6104,7 @@
                                   "completed",
                                   "failed",
                                   "canceled",
-                                  "reverted",
-                                  "escrow"
+                                  "reverted"
                                 ],
                                 "description": "Per-item status (withdrawals only)"
                               },
@@ -5692,9 +6613,17 @@
         "parameters": [
           {
             "schema": {
-              "type": [
-                "boolean",
-                "null"
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "true",
+                    "false"
+                  ]
+                }
               ],
               "default": false
             },
@@ -5802,6 +6731,10 @@
                               "id": {
                                 "type": "string"
                               },
+                              "assetId": {
+                                "type": "string",
+                                "description": "Raw Steam assetid. Always present on inventory listings and deposit trade items. Omitted on withdraw items until the item lands in the recipient's Steam inventory."
+                              },
                               "appid": {
                                 "type": "integer"
                               },
@@ -5834,8 +6767,7 @@
                                   "completed",
                                   "failed",
                                   "canceled",
-                                  "reverted",
-                                  "escrow"
+                                  "reverted"
                                 ],
                                 "description": "Per-item status (withdrawals only)"
                               },
@@ -6191,6 +7123,65 @@
               }
             }
           },
+          "424": {
+            "description": "Failed Dependency - Steam could not serve the request (inventory fetch failed, temporarily unavailable, or rate-limited upstream). The caller is not at fault; retry shortly.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable error message(s)"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
           "429": {
             "description": "Too Many Requests - rate limit exceeded",
             "content": {
@@ -6382,8 +7373,7 @@
                                   "completed",
                                   "failed",
                                   "canceled",
-                                  "reverted",
-                                  "escrow"
+                                  "reverted"
                                 ]
                               },
                               "game": {
@@ -6396,6 +7386,10 @@
                                   "properties": {
                                     "id": {
                                       "type": "string"
+                                    },
+                                    "assetId": {
+                                      "type": "string",
+                                      "description": "Raw Steam assetid. Always present on inventory listings and deposit trade items. Omitted on withdraw items until the item lands in the recipient's Steam inventory."
                                     },
                                     "appid": {
                                       "type": "integer"
@@ -6429,8 +7423,7 @@
                                         "completed",
                                         "failed",
                                         "canceled",
-                                        "reverted",
-                                        "escrow"
+                                        "reverted"
                                       ],
                                       "description": "Per-item status (withdrawals only)"
                                     },
@@ -7195,6 +8188,65 @@
               }
             }
           },
+          "424": {
+            "description": "Failed Dependency - Steam could not serve the request (inventory fetch failed, temporarily unavailable, or rate-limited upstream). The caller is not at fault; retry shortly.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable error message(s)"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
           "429": {
             "description": "Too Many Requests - rate limit exceeded",
             "content": {
@@ -7341,8 +8393,6 @@
           {
             "schema": {
               "type": "integer",
-              "minimum": 1,
-              "maximum": 1000,
               "default": 50
             },
             "required": false,
@@ -7379,6 +8429,10 @@
                               "id": {
                                 "type": "string"
                               },
+                              "assetId": {
+                                "type": "string",
+                                "description": "Raw Steam assetid. Always present on inventory listings and deposit trade items. Omitted on withdraw items until the item lands in the recipient's Steam inventory."
+                              },
                               "appid": {
                                 "type": "integer"
                               },
@@ -7411,8 +8465,7 @@
                                   "completed",
                                   "failed",
                                   "canceled",
-                                  "reverted",
-                                  "escrow"
+                                  "reverted"
                                 ],
                                 "description": "Per-item status (withdrawals only)"
                               },
@@ -7905,6 +8958,10 @@
                           "id": {
                             "type": "string"
                           },
+                          "assetId": {
+                            "type": "string",
+                            "description": "Raw Steam assetid. Always present on inventory listings and deposit trade items. Omitted on withdraw items until the item lands in the recipient's Steam inventory."
+                          },
                           "appid": {
                             "type": "integer"
                           },
@@ -7937,8 +8994,7 @@
                               "completed",
                               "failed",
                               "canceled",
-                              "reverted",
-                              "escrow"
+                              "reverted"
                             ],
                             "description": "Per-item status (withdrawals only)"
                           },
@@ -8534,8 +9590,7 @@
                             "completed",
                             "failed",
                             "canceled",
-                            "reverted",
-                            "escrow"
+                            "reverted"
                           ]
                         },
                         "game": {
@@ -8548,6 +9603,10 @@
                             "properties": {
                               "id": {
                                 "type": "string"
+                              },
+                              "assetId": {
+                                "type": "string",
+                                "description": "Raw Steam assetid. Always present on inventory listings and deposit trade items. Omitted on withdraw items until the item lands in the recipient's Steam inventory."
                               },
                               "appid": {
                                 "type": "integer"
@@ -8581,8 +9640,739 @@
                                   "completed",
                                   "failed",
                                   "canceled",
-                                  "reverted",
-                                  "escrow"
+                                  "reverted"
+                                ],
+                                "description": "Per-item status (withdrawals only)"
+                              },
+                              "marketPrice": {
+                                "type": "number",
+                                "description": "BUFF163 market price in USD"
+                              },
+                              "offer": {
+                                "type": "object",
+                                "properties": {
+                                  "price": {
+                                    "type": "number",
+                                    "description": "Offer price in USD"
+                                  },
+                                  "reference": {
+                                    "type": "string",
+                                    "description": "Marketplace product reference. On a market listing this is the parent itemId you queried `/market/item` with (hex, e.g. \"0010f8d48278ccb8\"); the listing-specific id is the `id` field above."
+                                  },
+                                  "delivery": {
+                                    "type": "string",
+                                    "enum": [
+                                      "standard",
+                                      "instant"
+                                    ],
+                                    "description": "Skinshark delivery mode"
+                                  },
+                                  "maxAmount": {
+                                    "type": "number"
+                                  },
+                                  "accepted": {
+                                    "type": "boolean"
+                                  }
+                                },
+                                "required": [
+                                  "price"
+                                ]
+                              },
+                              "exterior": {
+                                "type": "string"
+                              },
+                              "rarity": {
+                                "type": "string"
+                              },
+                              "color": {
+                                "type": "string"
+                              },
+                              "wear": {
+                                "type": "string"
+                              },
+                              "paintSeed": {
+                                "type": "integer"
+                              },
+                              "doppler": {
+                                "type": "object",
+                                "properties": {
+                                  "status": {
+                                    "type": "integer"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "paintIndex": {
+                                    "type": "integer"
+                                  }
+                                },
+                                "required": [
+                                  "name"
+                                ]
+                              },
+                              "fade": {
+                                "type": "object",
+                                "properties": {
+                                  "percentage": {
+                                    "type": "number"
+                                  }
+                                },
+                                "required": [
+                                  "percentage"
+                                ]
+                              },
+                              "hardened": {
+                                "type": "object",
+                                "properties": {
+                                  "status": {
+                                    "type": "integer"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "status",
+                                  "name"
+                                ]
+                              },
+                              "stickers": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "name": {
+                                      "type": "string"
+                                    },
+                                    "marketHashName": {
+                                      "type": "string"
+                                    },
+                                    "slot": {
+                                      "type": "integer"
+                                    },
+                                    "wear": {
+                                      "type": "number"
+                                    },
+                                    "iconUrl": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "name",
+                                    "slot",
+                                    "iconUrl"
+                                  ]
+                                }
+                              },
+                              "charm": {
+                                "type": "object",
+                                "properties": {
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "marketHashName": {
+                                    "type": "string"
+                                  },
+                                  "iconUrl": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "name",
+                                  "iconUrl"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "appid",
+                              "tradable"
+                            ]
+                          }
+                        },
+                        "totalPrice": {
+                          "type": "number",
+                          "description": "Total price in USD"
+                        },
+                        "preCredit": {
+                          "type": "number",
+                          "description": "Instant credit amount in USD"
+                        },
+                        "pendingCredit": {
+                          "type": "number",
+                          "description": "Amount held for hold period in USD"
+                        },
+                        "isInstant": {
+                          "type": "boolean",
+                          "description": "Whether instant crediting was requested"
+                        },
+                        "collateral": {
+                          "type": "object",
+                          "properties": {
+                            "merchant": {
+                              "type": "number"
+                            },
+                            "provider": {
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "merchant",
+                            "provider"
+                          ]
+                        },
+                        "holdEndDate": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "revertedBy": {
+                          "type": "string",
+                          "enum": [
+                            "supplier",
+                            "user"
+                          ]
+                        },
+                        "botInfo": {
+                          "type": "object",
+                          "properties": {
+                            "name": {
+                              "type": "string"
+                            },
+                            "avatar": {
+                              "type": "string"
+                            },
+                            "joined": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "steamId": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "name"
+                          ]
+                        },
+                        "error": {
+                          "type": "string"
+                        },
+                        "readyAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "type",
+                        "source",
+                        "merchantId",
+                        "clientUserId",
+                        "clientTradeUrl",
+                        "clientSteamID",
+                        "status",
+                        "game",
+                        "items",
+                        "totalPrice",
+                        "createdAt",
+                        "updatedAt"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - validation failed or invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable error message(s)"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable error message(s)"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable error message(s)"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "424": {
+            "description": "Failed Dependency - Steam could not serve the request (inventory fetch failed, temporarily unavailable, or rate-limited upstream). The caller is not at fault; retry shortly.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable error message(s)"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests - rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable error message(s)"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/client/trading/withdraw": {
+      "post": {
+        "summary": "Initiate a skin withdrawal",
+        "description": "Initiates a withdrawal trade where the client receives skins from the platform. Each item must include the itemId from the prices endpoint and the agreed price (USD). Maximum 50 items per withdrawal. Price is validated against current offers.",
+        "tags": [
+          "Withdrawals"
+        ],
+        "security": [
+          {
+            "ClientToken": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "itemId": {
+                          "type": "string",
+                          "minLength": 5,
+                          "maxLength": 256
+                        },
+                        "price": {
+                          "type": "number",
+                          "exclusiveMinimum": 0,
+                          "maximum": 100000
+                        }
+                      },
+                      "required": [
+                        "itemId",
+                        "price"
+                      ]
+                    },
+                    "minItems": 1,
+                    "maxItems": 50
+                  },
+                  "game": {
+                    "type": "string",
+                    "default": "730"
+                  },
+                  "externalId": {
+                    "type": "string",
+                    "maxLength": 128
+                  }
+                },
+                "required": [
+                  "items"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Withdrawal trade initiated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "deposit",
+                            "withdraw"
+                          ]
+                        },
+                        "source": {
+                          "type": "string",
+                          "enum": [
+                            "client",
+                            "self"
+                          ],
+                          "description": "Trade origin: \"client\" (end-user flow) or \"self\" (merchant self-trade)"
+                        },
+                        "externalId": {
+                          "type": "string"
+                        },
+                        "externalClientUserId": {
+                          "type": "string"
+                        },
+                        "merchantId": {
+                          "type": "string"
+                        },
+                        "clientUserId": {
+                          "type": "string"
+                        },
+                        "clientTradeUrl": {
+                          "type": "string"
+                        },
+                        "clientSteamID": {
+                          "type": "string"
+                        },
+                        "offerID": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "initiated",
+                            "pending",
+                            "active",
+                            "hold",
+                            "completed",
+                            "failed",
+                            "canceled",
+                            "reverted"
+                          ]
+                        },
+                        "game": {
+                          "type": "string"
+                        },
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "assetId": {
+                                "type": "string",
+                                "description": "Raw Steam assetid. Always present on inventory listings and deposit trade items. Omitted on withdraw items until the item lands in the recipient's Steam inventory."
+                              },
+                              "appid": {
+                                "type": "integer"
+                              },
+                              "name": {
+                                "type": "string",
+                                "description": "Omitted on bare withdraw items where AssetPay has no Steam-side metadata yet"
+                              },
+                              "marketHashName": {
+                                "type": "string"
+                              },
+                              "type": {
+                                "type": "string"
+                              },
+                              "iconUrl": {
+                                "type": "string"
+                              },
+                              "tradable": {
+                                "type": "boolean"
+                              },
+                              "amount": {
+                                "type": "number"
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": [
+                                  "initiated",
+                                  "pending",
+                                  "active",
+                                  "hold",
+                                  "completed",
+                                  "failed",
+                                  "canceled",
+                                  "reverted"
                                 ],
                                 "description": "Per-item status (withdrawals only)"
                               },
@@ -9076,10 +10866,10 @@
         }
       }
     },
-    "/client/trading/withdraw": {
+    "/client/trading/withdraw/quick": {
       "post": {
-        "summary": "Initiate a skin withdrawal",
-        "description": "Initiates a withdrawal trade where the client receives skins from the platform. Each item must include the itemId from the prices endpoint and the agreed price (USD). Maximum 50 items per withdrawal. Price is validated against current offers.",
+        "summary": "Initiate a quick skin withdrawal",
+        "description": "Buys the N cheapest listings of a single item at or below a per-unit ceiling, instead of naming specific listings. CS2 only. `itemId` and the gross per-unit `maxPrice` (fee-inclusive) come from /secure/prices; `amount` is the quantity (1-200) and `delivery` is standard or instant. The trade starts empty and locks the worst-case total; the filled listings (which may be fewer than requested) and the refund of any unfilled / below-ceiling remainder settle asynchronously via the trade webhook.",
         "tags": [
           "Withdrawals"
         ],
@@ -9094,29 +10884,28 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "items": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "itemId": {
-                          "type": "string",
-                          "minLength": 5,
-                          "maxLength": 256
-                        },
-                        "price": {
-                          "type": "number",
-                          "exclusiveMinimum": 0,
-                          "maximum": 100000
-                        }
-                      },
-                      "required": [
-                        "itemId",
-                        "price"
-                      ]
-                    },
-                    "minItems": 1,
-                    "maxItems": 50
+                  "itemId": {
+                    "type": "string",
+                    "minLength": 5,
+                    "maxLength": 256
+                  },
+                  "maxPrice": {
+                    "type": "number",
+                    "exclusiveMinimum": 0,
+                    "maximum": 100000
+                  },
+                  "amount": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 200
+                  },
+                  "delivery": {
+                    "type": "string",
+                    "enum": [
+                      "standard",
+                      "instant"
+                    ],
+                    "default": "standard"
                   },
                   "game": {
                     "type": "string",
@@ -9128,7 +10917,9 @@
                   }
                 },
                 "required": [
-                  "items"
+                  "itemId",
+                  "maxPrice",
+                  "amount"
                 ],
                 "additionalProperties": false
               }
@@ -9137,7 +10928,7 @@
         },
         "responses": {
           "200": {
-            "description": "Withdrawal trade initiated",
+            "description": "Quick withdrawal trade initiated (items settle via webhook)",
             "content": {
               "application/json": {
                 "schema": {
@@ -9205,8 +10996,7 @@
                             "completed",
                             "failed",
                             "canceled",
-                            "reverted",
-                            "escrow"
+                            "reverted"
                           ]
                         },
                         "game": {
@@ -9219,6 +11009,10 @@
                             "properties": {
                               "id": {
                                 "type": "string"
+                              },
+                              "assetId": {
+                                "type": "string",
+                                "description": "Raw Steam assetid. Always present on inventory listings and deposit trade items. Omitted on withdraw items until the item lands in the recipient's Steam inventory."
                               },
                               "appid": {
                                 "type": "integer"
@@ -9252,8 +11046,7 @@
                                   "completed",
                                   "failed",
                                   "canceled",
-                                  "reverted",
-                                  "escrow"
+                                  "reverted"
                                 ],
                                 "description": "Per-item status (withdrawals only)"
                               },
@@ -9763,11 +11556,11 @@
           {
             "schema": {
               "type": "string",
-              "format": "uuid",
-              "description": "Trade UUID"
+              "minLength": 1,
+              "description": "Internal trade id or the externalId supplied at creation."
             },
             "required": true,
-            "description": "Trade UUID",
+            "description": "Internal trade id or the externalId supplied at creation.",
             "name": "tradeId",
             "in": "path"
           },

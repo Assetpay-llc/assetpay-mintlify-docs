@@ -93,7 +93,7 @@ Returned by deposit, withdrawal, inventory, and market endpoints.
 |------|-----|------|-------------|
 | 1 | `EXTERNAL_ID_EXISTS` | 409 | External ID already exists for this merchant |
 | 2 | `MISSING_ITEMS` | 400 | No items were provided in the request |
-| 3 | `INVENTORY_FETCH_FAILED` | 502 | Couldn't load the user's Steam inventory |
+| 3 | `INVENTORY_FETCH_FAILED` | 424 | Couldn't load the user's Steam inventory |
 | 4 | `NO_OFFER_FOUND` | 400 | No valid offer exists for this item |
 | 5 | `TRADE_OFFER_FAILED` | 502 | Failed to send the Steam trade offer |
 | 6 | `TOO_MANY_ACTIVE_TRADES` | 429 | User has too many pending trades (per-client deposit guard) |
@@ -114,6 +114,8 @@ Returned by deposit, withdrawal, inventory, and market endpoints.
 | 21 | `TRADE_NOT_FOUND` | 404 | Trade not found |
 | 22 | `INVALID_STATE_TRANSITION` | 409 | Invalid trade state transition |
 | 23 | `INVALID_TRADE_ID` | 400 | Invalid trade ID |
+| 31 | `STEAM_UNAVAILABLE` | 424 | Steam temporarily couldn't serve the request; retry shortly |
+| 33 | `STEAM_RATE_LIMITED` | 424 | Steam is rate-limiting inventory requests; retry shortly |
 
 ## Wallet / Funding Errors
 

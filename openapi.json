@@ -1140,7 +1140,7 @@
     "/secure/inventory": {
       "get": {
         "summary": "Get Steam inventory (merchant self-trade)",
-        "description": "Fetches a Steam account's inventory. The merchant passes a tradeUrl per request and AssetPay derives the steamId from it — no client authentication step is needed. Use this to discover items the merchant can sell to AssetPay via /secure/sell.",
+        "description": "Fetches a Steam account's inventory. The merchant passes a tradeUrl per request and AssetPay derives the steamId from it - no client authentication step is needed. Use this to discover items the merchant can sell to AssetPay via /secure/sell.",
         "tags": [
           "Trading"
         ],
@@ -4130,6 +4130,392 @@
         }
       }
     },
+    "/secure/buy/{tradeId}/items/{itemId}/cancel": {
+      "post": {
+        "summary": "Cancel an undelivered buy item (merchant self-trade)",
+        "description": "Requests cancellation of a single undelivered item from a merchant self-trade buy. Skinshark (CS2) items only - Rust cannot be cancelled. The item must be at least 30 minutes old and not yet in a terminal state. On success the refund flows back via the trade webhook; the response only confirms the cancellation was accepted.",
+        "tags": [
+          "Trading"
+        ],
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Internal trade id or the externalId supplied at creation."
+            },
+            "required": true,
+            "description": "Internal trade id or the externalId supplied at creation.",
+            "name": "tradeId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Inventory item UUID"
+            },
+            "required": true,
+            "description": "Inventory item UUID",
+            "name": "itemId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cancellation accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "tradeId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "itemId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "cancelled"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "tradeId",
+                        "itemId",
+                        "status"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - validation failed or invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable error message(s)"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable error message(s)"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable error message(s)"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable error message(s)"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests - rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable error message(s)"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/secure/market": {
       "get": {
         "summary": "Browse marketplace items (merchant self-trade)",
@@ -5276,7 +5662,7 @@
     "/secure/trades": {
       "get": {
         "summary": "List merchant self-trades",
-        "description": "Cursor-paginated history of trades initiated via /secure/buy and /secure/sell. End-user client trades are NOT included here — use the merchant module for combined history.",
+        "description": "Cursor-paginated history of trades initiated via /secure/buy and /secure/sell. End-user client trades are NOT included here - use the merchant module for combined history.",
         "tags": [
           "Trading"
         ],
@@ -8876,7 +9262,7 @@
     "/client/market/item": {
       "get": {
         "summary": "Get marketplace listings for one item",
-        "description": "Returns the available listings (price/wear/stickers/etc.) for a specific item type. CS2 only — pass an itemId from /client/market/suggestions or /client/market.",
+        "description": "Returns the available listings (price/wear/stickers/etc.) for a specific item type. CS2 only - pass an itemId from /client/market/suggestions or /client/market.",
         "tags": [
           "Client"
         ],
@@ -11543,7 +11929,7 @@
     "/client/trading/withdraw/{tradeId}/items/{itemId}/cancel": {
       "post": {
         "summary": "Cancel an undelivered withdrawal item",
-        "description": "Requests cancellation of a single undelivered withdrawal item. Skinshark (CS2) items only — Rust withdrawals cannot be cancelled. The item must be at least 30 minutes old and not yet in a terminal state. On success the refund flows back via the trade webhook; the response only confirms the cancellation was accepted.",
+        "description": "Requests cancellation of a single undelivered withdrawal item. Skinshark (CS2) items only - Rust withdrawals cannot be cancelled. The item must be at least 30 minutes old and not yet in a terminal state. On success the refund flows back via the trade webhook; the response only confirms the cancellation was accepted.",
         "tags": [
           "Withdrawals"
         ],

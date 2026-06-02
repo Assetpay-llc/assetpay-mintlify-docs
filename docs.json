@@ -93,6 +93,7 @@
               "api-reference/secure/sell",
               "api-reference/secure/buy",
               "api-reference/secure/buy-quick",
+              "api-reference/secure/cancel-buy-item",
               "api-reference/secure/get-market",
               "api-reference/secure/get-item-listings",
               "api-reference/secure/get-trades",

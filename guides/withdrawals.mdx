@@ -25,8 +25,8 @@ A withdrawal is when a user buys a skin from the market using their balance on y
   <Step title="Your backend approves or rejects">
     If the user has enough balance: deduct it and respond `2xx`. AssetPay proceeds with the purchase. If not: respond with `4xx` (e.g. `402`) and the trade is marked `failed`.
   </Step>
-  <Step title="Item purchased and delivered">
-    AssetPay sources the item from the supplier and the Steam trade offer is sent to and accepted by the user. The trade moves to `hold` for the 7-day Steam reversal-protection window.
+  <Step title="Item sourced and offer sent">
+    AssetPay sources the item from the supplier (`pending`), then sends the Steam trade offer to the user (`active`). When the user accepts, the trade moves to `hold` for the Steam reversal-protection window (and the callback now carries `offerID` + `holdEndDate`).
   </Step>
   <Step title="Completed">
     After the hold period, the trade reaches `completed`. No further action needed.
@@ -144,13 +144,17 @@ All rejection paths mark the trade as `failed` and refund your merchant wallet a
 | `trade.status` | What your backend should do |
 |----------------|--------|
 | `initiated` | Check user balance, deduct it, respond `2xx` to approve. Or reject with `4xx`. |
-| `hold` | Item sourced from supplier, Steam trade offer accepted by the user, 7-day hold running. Acknowledge with `200`. |
+| `pending` | Supplier is sourcing the item. Acknowledge with `200`. No balance action. |
+| `active` | Steam trade offer sent to the user, awaiting acceptance. Acknowledge with `200`. No balance action. |
+| `hold` | Item sourced and the Steam trade offer accepted by the user, hold running (`offerID` + `holdEndDate` present). Acknowledge with `200`. |
 | `completed` | Delivery complete. No balance action needed. |
 | `failed` | Trade did not go through. Refund `totalPrice` if you previously deducted it. |
 | `canceled` | Trade canceled before processing. Refund `totalPrice` if you previously deducted it. |
 | `reverted` | A completed withdrawal was reversed. Refund `totalPrice`. Check `revertedBy`. |
 
-Withdrawals do **not** pass through an `active` state — once the supplier purchase succeeds and the Steam offer is accepted, the trade jumps straight from `initiated` to `hold`.
+A withdrawal progresses `initiated → pending → active → hold → completed`. The intermediate statuses (`pending`, `active`) are informational; drive your balance logic off `initiated` (deduct) and the terminal states (`completed` / `failed` / `canceled` / `reverted`).
+
+**Rust withdrawals normally skip `hold`.** Rust items have no 7-day reversal window, so a Rust withdrawal usually goes `active → completed` directly with no `holdEndDate` (the exception is a Steam security escrow, which surfaces as `hold`). CS2 withdrawals always pass through `hold`.
 
 ### Trade Reversals
 
@@ -195,6 +199,8 @@ For multi-item withdrawals, each item in the `items` array carries its own `stat
 | Status | Meaning |
 |--------|---------|
 | `initiated` | Purchase not started yet |
+| `pending` | Supplier sourcing the item |
+| `active` | Steam trade offer sent, awaiting acceptance |
 | `hold` | Item delivered to user, hold period running |
 | `completed` | Item delivered successfully and hold cleared |
 | `failed` | Purchase or delivery failed for this item |

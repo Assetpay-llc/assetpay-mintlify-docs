@@ -49,7 +49,7 @@ The total collateral available for a deposit is:
 availableCollateral = (providerCollateral + merchantCollateral) - activeExposure
 ```
 
-**Active exposure** is the sum of `preCredit` from all of the user's currently pending trades (trades in `initiated`, `active`, `hold`, or `escrow` status). This prevents a single user from leveraging the same collateral pool across many simultaneous deposits.
+**Active exposure** is the sum of `preCredit` from all of the user's currently pending trades (trades in `initiated`, `active`, or `hold` status). This prevents a single user from leveraging the same collateral pool across many simultaneous deposits.
 
 ## What Determines Collateral
 

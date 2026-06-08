@@ -23,7 +23,7 @@ A deposit is when a user sells their skin to your platform. The user sends their
     AssetPay sends a Steam trade offer to the user. The trade moves to `active` — sitting in the user's Steam inbox awaiting acceptance.
   </Step>
   <Step title="User accepts">
-    The user accepts the trade offer in Steam. The trade moves to `hold` (or `escrow → hold` if their account requires Steam escrow).
+    The user accepts the trade offer in Steam. The trade moves to `hold`.
   </Step>
   <Step title="Hold period (CS2 only)">
     For CS2, Steam enforces a 7-day trade protection period. The trade stays in `hold` until it ends. Rust trades skip this step entirely and transition `active → completed` directly.
@@ -92,7 +92,7 @@ Two layers apply to `/client/trading/deposit`:
 
 - **Per-merchant tier throttle** (shared across all clients): 500 req/min verified, 5 req/min unverified.
 - **Per-client guard** (scoped per merchant + client Steam ID):
-  - Max **5 concurrent active deposits** (`initiated | active | hold | escrow`) — `TOO_MANY_ACTIVE_TRADES` (HTTP 429).
+  - Max **5 concurrent active deposits** (not-yet-accepted: `initiated | active`) — `TOO_MANY_ACTIVE_TRADES` (HTTP 429).
   - Max **10 deposits per 5-minute rolling window** — `RATE_LIMITED` (HTTP 429).
 
 These guard against runaway behavior on a single user. They run before pricing/inventory fetches, so a rate-limited request fails fast and cheap.
@@ -163,8 +163,8 @@ External IDs must be unique per trade. Reusing an ID will result in an `EXTERNAL
 |-------|--------|
 | `initiated` | Just acknowledge |
 | `active` | Just acknowledge — Steam offer sent, awaiting user acceptance |
-| `escrow` | Just acknowledge |
 | `failed` | No credit needed |
 | `canceled` | No credit needed |
+| `declined` | No credit needed (user declined the offer) |
 
 See the [Callbacks](/guides/callbacks) guide for full details on processing each event.

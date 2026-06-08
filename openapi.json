@@ -1315,6 +1315,7 @@
                                   "completed",
                                   "failed",
                                   "canceled",
+                                  "declined",
                                   "reverted"
                                 ],
                                 "description": "Per-item status (withdrawals only)"
@@ -1981,7 +1982,8 @@
                           "type": "string"
                         },
                         "offerID": {
-                          "type": "string"
+                          "type": "string",
+                          "description": "Steam trade offer id. Present once the offer is sent."
                         },
                         "status": {
                           "type": "string",
@@ -1993,8 +1995,10 @@
                             "completed",
                             "failed",
                             "canceled",
+                            "declined",
                             "reverted"
-                          ]
+                          ],
+                          "description": "Trade status. In-flight: initiated, pending, active, hold. Terminal: completed, failed, canceled, declined, reverted. Deposit flow: initiated → active → hold → completed. Withdraw flow: initiated → pending → active → hold → completed."
                         },
                         "game": {
                           "type": "string"
@@ -2043,6 +2047,7 @@
                                   "completed",
                                   "failed",
                                   "canceled",
+                                  "declined",
                                   "reverted"
                                 ],
                                 "description": "Per-item status (withdrawals only)"
@@ -2777,7 +2782,8 @@
                           "type": "string"
                         },
                         "offerID": {
-                          "type": "string"
+                          "type": "string",
+                          "description": "Steam trade offer id. Present once the offer is sent."
                         },
                         "status": {
                           "type": "string",
@@ -2789,8 +2795,10 @@
                             "completed",
                             "failed",
                             "canceled",
+                            "declined",
                             "reverted"
-                          ]
+                          ],
+                          "description": "Trade status. In-flight: initiated, pending, active, hold. Terminal: completed, failed, canceled, declined, reverted. Deposit flow: initiated → active → hold → completed. Withdraw flow: initiated → pending → active → hold → completed."
                         },
                         "game": {
                           "type": "string"
@@ -2839,6 +2847,7 @@
                                   "completed",
                                   "failed",
                                   "canceled",
+                                  "declined",
                                   "reverted"
                                 ],
                                 "description": "Per-item status (withdrawals only)"
@@ -3515,7 +3524,8 @@
                           "type": "string"
                         },
                         "offerID": {
-                          "type": "string"
+                          "type": "string",
+                          "description": "Steam trade offer id. Present once the offer is sent."
                         },
                         "status": {
                           "type": "string",
@@ -3527,8 +3537,10 @@
                             "completed",
                             "failed",
                             "canceled",
+                            "declined",
                             "reverted"
-                          ]
+                          ],
+                          "description": "Trade status. In-flight: initiated, pending, active, hold. Terminal: completed, failed, canceled, declined, reverted. Deposit flow: initiated → active → hold → completed. Withdraw flow: initiated → pending → active → hold → completed."
                         },
                         "game": {
                           "type": "string"
@@ -3577,6 +3589,7 @@
                                   "completed",
                                   "failed",
                                   "canceled",
+                                  "declined",
                                   "reverted"
                                 ],
                                 "description": "Per-item status (withdrawals only)"
@@ -4672,6 +4685,7 @@
                                   "completed",
                                   "failed",
                                   "canceled",
+                                  "declined",
                                   "reverted"
                                 ],
                                 "description": "Per-item status (withdrawals only)"
@@ -5201,6 +5215,7 @@
                               "completed",
                               "failed",
                               "canceled",
+                              "declined",
                               "reverted"
                             ],
                             "description": "Per-item status (withdrawals only)"
@@ -5776,7 +5791,8 @@
                                 "type": "string"
                               },
                               "offerID": {
-                                "type": "string"
+                                "type": "string",
+                                "description": "Steam trade offer id. Present once the offer is sent."
                               },
                               "status": {
                                 "type": "string",
@@ -5788,8 +5804,10 @@
                                   "completed",
                                   "failed",
                                   "canceled",
+                                  "declined",
                                   "reverted"
-                                ]
+                                ],
+                                "description": "Trade status. In-flight: initiated, pending, active, hold. Terminal: completed, failed, canceled, declined, reverted. Deposit flow: initiated → active → hold → completed. Withdraw flow: initiated → pending → active → hold → completed."
                               },
                               "game": {
                                 "type": "string"
@@ -5838,6 +5856,7 @@
                                         "completed",
                                         "failed",
                                         "canceled",
+                                        "declined",
                                         "reverted"
                                       ],
                                       "description": "Per-item status (withdrawals only)"
@@ -6428,7 +6447,8 @@
                           "type": "string"
                         },
                         "offerID": {
-                          "type": "string"
+                          "type": "string",
+                          "description": "Steam trade offer id. Present once the offer is sent."
                         },
                         "status": {
                           "type": "string",
@@ -6440,8 +6460,10 @@
                             "completed",
                             "failed",
                             "canceled",
+                            "declined",
                             "reverted"
-                          ]
+                          ],
+                          "description": "Trade status. In-flight: initiated, pending, active, hold. Terminal: completed, failed, canceled, declined, reverted. Deposit flow: initiated → active → hold → completed. Withdraw flow: initiated → pending → active → hold → completed."
                         },
                         "game": {
                           "type": "string"
@@ -6490,6 +6512,7 @@
                                   "completed",
                                   "failed",
                                   "canceled",
+                                  "declined",
                                   "reverted"
                                 ],
                                 "description": "Per-item status (withdrawals only)"
@@ -7153,6 +7176,7 @@
                                   "completed",
                                   "failed",
                                   "canceled",
+                                  "declined",
                                   "reverted"
                                 ],
                                 "description": "Per-item status (withdrawals only)"
@@ -7747,7 +7771,8 @@
                                 "type": "string"
                               },
                               "offerID": {
-                                "type": "string"
+                                "type": "string",
+                                "description": "Steam trade offer id. Present once the offer is sent."
                               },
                               "status": {
                                 "type": "string",
@@ -7759,8 +7784,10 @@
                                   "completed",
                                   "failed",
                                   "canceled",
+                                  "declined",
                                   "reverted"
-                                ]
+                                ],
+                                "description": "Trade status. In-flight: initiated, pending, active, hold. Terminal: completed, failed, canceled, declined, reverted. Deposit flow: initiated → active → hold → completed. Withdraw flow: initiated → pending → active → hold → completed."
                               },
                               "game": {
                                 "type": "string"
@@ -7809,6 +7836,7 @@
                                         "completed",
                                         "failed",
                                         "canceled",
+                                        "declined",
                                         "reverted"
                                       ],
                                       "description": "Per-item status (withdrawals only)"
@@ -8851,6 +8879,7 @@
                                   "completed",
                                   "failed",
                                   "canceled",
+                                  "declined",
                                   "reverted"
                                 ],
                                 "description": "Per-item status (withdrawals only)"
@@ -9380,6 +9409,7 @@
                               "completed",
                               "failed",
                               "canceled",
+                              "declined",
                               "reverted"
                             ],
                             "description": "Per-item status (withdrawals only)"
@@ -9964,7 +9994,8 @@
                           "type": "string"
                         },
                         "offerID": {
-                          "type": "string"
+                          "type": "string",
+                          "description": "Steam trade offer id. Present once the offer is sent."
                         },
                         "status": {
                           "type": "string",
@@ -9976,8 +10007,10 @@
                             "completed",
                             "failed",
                             "canceled",
+                            "declined",
                             "reverted"
-                          ]
+                          ],
+                          "description": "Trade status. In-flight: initiated, pending, active, hold. Terminal: completed, failed, canceled, declined, reverted. Deposit flow: initiated → active → hold → completed. Withdraw flow: initiated → pending → active → hold → completed."
                         },
                         "game": {
                           "type": "string"
@@ -10026,6 +10059,7 @@
                                   "completed",
                                   "failed",
                                   "canceled",
+                                  "declined",
                                   "reverted"
                                 ],
                                 "description": "Per-item status (withdrawals only)"
@@ -10696,7 +10730,8 @@
                           "type": "string"
                         },
                         "offerID": {
-                          "type": "string"
+                          "type": "string",
+                          "description": "Steam trade offer id. Present once the offer is sent."
                         },
                         "status": {
                           "type": "string",
@@ -10708,8 +10743,10 @@
                             "completed",
                             "failed",
                             "canceled",
+                            "declined",
                             "reverted"
-                          ]
+                          ],
+                          "description": "Trade status. In-flight: initiated, pending, active, hold. Terminal: completed, failed, canceled, declined, reverted. Deposit flow: initiated → active → hold → completed. Withdraw flow: initiated → pending → active → hold → completed."
                         },
                         "game": {
                           "type": "string"
@@ -10758,6 +10795,7 @@
                                   "completed",
                                   "failed",
                                   "canceled",
+                                  "declined",
                                   "reverted"
                                 ],
                                 "description": "Per-item status (withdrawals only)"
@@ -11370,7 +11408,8 @@
                           "type": "string"
                         },
                         "offerID": {
-                          "type": "string"
+                          "type": "string",
+                          "description": "Steam trade offer id. Present once the offer is sent."
                         },
                         "status": {
                           "type": "string",
@@ -11382,8 +11421,10 @@
                             "completed",
                             "failed",
                             "canceled",
+                            "declined",
                             "reverted"
-                          ]
+                          ],
+                          "description": "Trade status. In-flight: initiated, pending, active, hold. Terminal: completed, failed, canceled, declined, reverted. Deposit flow: initiated → active → hold → completed. Withdraw flow: initiated → pending → active → hold → completed."
                         },
                         "game": {
                           "type": "string"
@@ -11432,6 +11473,7 @@
                                   "completed",
                                   "failed",
                                   "canceled",
+                                  "declined",
                                   "reverted"
                                 ],
                                 "description": "Per-item status (withdrawals only)"

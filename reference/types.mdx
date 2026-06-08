@@ -41,10 +41,10 @@ interface Trade {
   // Tracking
   externalId?: string;           // Your tracking ID (from externalId param)
   externalClientUserId?: string; // Your user ID (from clientId param)
-  offerID?: string;              // Steam trade offer ID
+  offerID?: string;              // Steam trade offer ID (present from "active" onward)
 
   // Timing
-  holdEndDate?: Date;            // When the 7-day hold expires
+  holdEndDate?: Date;            // When the Steam hold expires (present from "hold" onward)
   readyAt?: Date;                // When the trade became ready
   createdAt: Date;
   updatedAt: Date;
@@ -191,15 +191,18 @@ All trade and item statuses are **lowercase** in API requests, responses, and we
 
 ```typescript
 type TradeStatus =
-  | 'initiated'   // Trade created, processing not started (for withdrawals: awaiting merchant approval)
-  | 'active'      // (Deposits only) Steam trade offer sent to user, awaiting acceptance
-  | 'escrow'      // (Deposits only) Steam 2FA escrow hold
-  | 'hold'        // 7-day Steam hold period (CS2 only)
+  | 'initiated'   // Trade created. Withdrawals: approval gate (merchant wallet not yet debited)
+  | 'pending'     // (Withdrawals only) Supplier is sourcing the item / creating the purchase
+  | 'active'      // Steam trade offer sent to the user, awaiting acceptance
+  | 'hold'        // User accepted; Steam hold window running (carries offerID + holdEndDate)
   | 'completed'   // Trade finished successfully
   | 'failed'      // Trade failed at some point
-  | 'canceled'    // Trade was canceled before processing
-  | 'reverted';   // Previously completed trade was reversed
+  | 'canceled'    // Trade was canceled before completion
+  | 'declined'    // (Deposits only) User declined the Steam trade offer
+  | 'reverted';   // Previously completed trade was reversed (see revertedBy)
 ```
+
+Both deposits and withdrawals emit `active`. `pending` is withdrawal-only (the supplier sourcing step). `holdEndDate` carries the exact hold expiry, which can be later for accounts without Steam mobile auth set up.
 
 ### TradeType
 

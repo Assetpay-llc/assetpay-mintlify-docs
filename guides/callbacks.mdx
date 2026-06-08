@@ -156,11 +156,11 @@ The `event` you're handling is the new value of `trade.status`. AssetPay dispatc
 |----------------|-----------|
 | `initiated` | Trade created, no Steam offer sent yet. Acknowledge with `200`. No balance action. |
 | `active` | Steam trade offer **sent to the user** — awaiting their acceptance. Acknowledge with `200`. |
-| `escrow` | User accepted, but Steam is holding the items in 2FA escrow. Acknowledge with `200`. |
-| `hold` | User accepted, items received, 7-day Steam hold started. Credit `preCredit` if using instant deposits; otherwise just acknowledge. |
+| `hold` | User accepted, items received, Steam hold started. Credit `preCredit` if using instant deposits; otherwise just acknowledge. |
 | `completed` | Hold ended cleanly (or no hold required for Rust). Credit `pendingCredit` (or `totalPrice` if not using instant deposits). |
 | `failed` | Trade did not go through. No credit needed. Optionally notify the user. |
-| `canceled` | Trade was canceled before any state was applied. No action needed. |
+| `canceled` | Trade was canceled before any state was applied (incl. an unaccepted offer auto-canceled past its window). No action needed. |
+| `declined` | The end user declined the Steam trade offer. No items received, no credit needed. Optionally notify the user. |
 | `reverted` | A previously completed deposit was reversed. Reverse any `preCredit` + `pendingCredit` already credited. Check `revertedBy`. |
 
 ### Withdrawal Callbacks
@@ -168,13 +168,15 @@ The `event` you're handling is the new value of `trade.status`. AssetPay dispatc
 | `trade.status` | What to Do |
 |----------------|-----------|
 | `initiated` | **Approval gate** — see below. The merchant's wallet hasn't been debited yet; your response decides whether the withdrawal proceeds. |
-| `hold` | Items sourced from supplier and **Steam trade offer sent and accepted by the user** — 7-day hold period running. Acknowledge with `200`. |
+| `pending` | Supplier is sourcing the item. Acknowledge with `200`. No balance action. |
+| `active` | Steam trade offer sent to the user — awaiting acceptance (`offerID` now present). Acknowledge with `200`. |
+| `hold` | Items sourced and **Steam trade offer accepted by the user** — hold period running (`offerID` + `holdEndDate` present). Acknowledge with `200`. |
 | `completed` | Hold ended cleanly. No action needed. |
 | `failed` | Trade did not go through. Refund `totalPrice` to the user's balance if you previously deducted it. |
 | `canceled` | Trade was canceled before processing. Refund `totalPrice` to the user's balance if you previously deducted it. |
 | `reverted` | A previously completed withdrawal was reversed (by supplier or user). Refund `totalPrice`. Check `revertedBy`. |
 
-Withdrawals do **not** have a separate `active` state — they jump from `initiated` straight to `hold` once the supplier purchase succeeds and the Steam offer is accepted.
+A withdrawal moves `initiated → pending → active → hold → completed`. The intermediate statuses (`pending`, `active`) are progress signals and may be skipped depending on the provider and delivery mode, so drive balance changes off `initiated` and the terminal states.
 
 ### The `initiated` callback for withdrawals
 
@@ -290,4 +292,18 @@ Here's the sequence of callbacks you'd receive for a typical CS2 deposit:
 4. completed  →  Hold ended, no reversal (credit pendingCredit here)
 ```
 
-If something goes wrong at any step, you'll get a `failed` callback instead of the next step. If a reversal happens after `completed`, you'll get `reverted`. If the user's Steam account requires escrow, you'll see `active → escrow → hold` instead of `active → hold`. Rust deposits skip the `hold` step entirely and go straight from `active` to `completed`.
+If something goes wrong at any step, you'll get a `failed` callback instead of the next step. If the user declines the offer you'll get `declined`, and if it's auto-canceled after sitting unaccepted you'll get `canceled`. If a reversal happens after `completed`, you'll get `reverted`. Rust deposits skip the `hold` step entirely and go straight from `active` to `completed`.
+
+## Callback Example: Complete Withdrawal Flow
+
+Here's the sequence of callbacks you'd receive for a typical CS2 withdrawal:
+
+```
+1. initiated  →  Approval gate — deduct balance and respond 2xx to approve
+2. pending    →  Supplier sourcing the item
+3. active     →  Steam trade offer sent to the user (offerID now present)
+4. hold       →  User accepted, Steam hold running (offerID + holdEndDate present)
+5. completed  →  Hold ended, delivery final
+```
+
+If you reject the `initiated` callback or the supplier purchase fails, you'll get a `failed` callback (refund the user's balance). A reversal after `hold` surfaces as `reverted`. **Rust withdrawals normally skip `hold`** — Rust has no 7-day reversal window, so they usually go `active → completed` directly with no `holdEndDate` (a Steam security escrow is the exception and surfaces as `hold`). Act on `initiated` and the terminal states rather than expecting every step.

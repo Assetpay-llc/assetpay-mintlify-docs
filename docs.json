@@ -38,7 +38,8 @@
             "group": "Events & Webhooks",
             "pages": [
               "guides/callbacks",
-              "guides/websocket"
+              "guides/websocket",
+              "guides/price-feed"
             ]
           },
           {

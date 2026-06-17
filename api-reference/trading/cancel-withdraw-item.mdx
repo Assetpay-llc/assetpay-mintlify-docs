@@ -1,6 +1,6 @@
 ---
 title: "Cancel Withdrawal Item"
-description: "Cancel a single undelivered withdrawal item (CS2 / Skinshark only)."
+description: "Cancel a single undelivered withdrawal item (CS2 / Assetpay only)."
 ---
 
 # POST /client/trading/withdraw/{tradeId}/items/{itemId}/cancel
@@ -10,7 +10,7 @@ Requests cancellation of a single undelivered withdrawal item. AssetPay asks the
 **Authentication:** Client Token (`Authorization` header)
 
 <Note>
-CS2 (Skinshark) withdrawals only. Rust withdrawals are fulfilled by a polling supplier with no cancel API and cannot be cancelled.
+CS2 (Assetpay) withdrawals only. Rust withdrawals are fulfilled by a polling supplier with no cancel API and cannot be cancelled.
 </Note>
 
 ## Request
@@ -32,7 +32,7 @@ Authorization: CLIENT_TOKEN
 A cancel is only accepted when **all** of the following hold:
 
 - The item belongs to a **withdrawal** trade owned by the authenticated user.
-- The item is a **CS2 (Skinshark)** item.
+- The item is a **CS2 (Assetpay)** item.
 - The item is **at least 30 minutes old** (measured from when it was created).
 - The item is **not** already in a terminal state (`completed`, `failed`, `reverted`, `canceled`).
 
@@ -66,6 +66,6 @@ Shared across all clients of the same merchant.
 | Code | Key | When |
 |------|-----|------|
 | 27 | `TRADE_CANCEL_TOO_SOON` | The item is younger than 30 minutes. Retry after the 30-minute window. |
-| 28 | `TRADE_NOT_CANCELLABLE` | Not cancellable: not a withdrawal, not a CS2/Skinshark item, already in a terminal state, or the marketplace rejected the cancel. |
+| 28 | `TRADE_NOT_CANCELLABLE` | Not cancellable: not a withdrawal, not a CS2/Assetpay item, already in a terminal state, or the marketplace rejected the cancel. |
 | 1300 | `FORBIDDEN` | The trade does not belong to the authenticated user. |
 | 2201 | `ITEM_NOT_FOUND` | No item with that `itemId` exists under the given `tradeId`. |

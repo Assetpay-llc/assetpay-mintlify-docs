@@ -761,7 +761,7 @@
     "/secure/prices": {
       "get": {
         "summary": "Get item prices and offers",
-        "description": "Returns the current price book for a given game. Each item carries a `deposit` price (what AssetPay pays for the item) and a `withdraw` price (fee-inclusive buy price you can pass straight back to /secure/buy). For CS2, `withdraw` is split into `standard` and `instant` delivery and each entry includes the Skinshark catalog `itemId`; for Rust, `withdraw` is a single value. Withdraw prices already include your merchant fee. Requires API key with CORE_ACCESS scope.",
+        "description": "Returns the current price book for a given game. Each item carries a `deposit` price (what AssetPay pays for the item) and a `withdraw` price (fee-inclusive buy price you can pass straight back to /secure/buy). For CS2, `withdraw` is split into `standard` and `instant` delivery and each entry includes the Skinshark catalog `itemId`; for Rust, `withdraw` is a single value. Doppler items are returned as a single entry with a `phases[]` breakdown (per-phase deposit + standard withdraw); the top-level `deposit`/`withdraw` carry the floor as a default, and `withdraw.instant` is the any-phase instant price (instant delivery is not phase-specific). Withdraw prices already include your merchant fee. Requires API key with CORE_ACCESS scope.",
         "tags": [
           "Trading"
         ],
@@ -846,6 +846,50 @@
                                   "instant"
                                 ],
                                 "description": "Fee-inclusive buy price per delivery mode; null when unavailable"
+                              },
+                              "phases": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "phase": {
+                                      "type": "string",
+                                      "enum": [
+                                        "Phase 1",
+                                        "Phase 2",
+                                        "Phase 3",
+                                        "Phase 4",
+                                        "Ruby",
+                                        "Sapphire",
+                                        "Black Pearl",
+                                        "Emerald"
+                                      ],
+                                      "description": "Doppler phase label"
+                                    },
+                                    "accepted": {
+                                      "type": "boolean",
+                                      "description": "Whether this phase is accepted for deposit (deposit price > 0)"
+                                    },
+                                    "deposit": {
+                                      "type": "number",
+                                      "description": "Deposit offer price in USD for this phase (what we pay)"
+                                    },
+                                    "withdraw": {
+                                      "type": [
+                                        "number",
+                                        "null"
+                                      ],
+                                      "description": "Fee-inclusive standard buy price in USD for this phase; null when unavailable. Instant delivery is not phase-specific - see the item's withdraw.instant."
+                                    }
+                                  },
+                                  "required": [
+                                    "phase",
+                                    "accepted",
+                                    "deposit",
+                                    "withdraw"
+                                  ]
+                                },
+                                "description": "Present for Doppler items: per-phase deposit + standard withdraw prices. The top-level deposit/withdraw carry the floor (cheapest phase / grouped floor) as a default."
                               }
                             },
                             "required": [
@@ -1369,6 +1413,10 @@
                               "paintSeed": {
                                 "type": "integer"
                               },
+                              "previewToken": {
+                                "type": "string",
+                                "description": "Steam inspect/preview token for rendering the item's in-game preview. Present on inventory and autoseller-pool (self-owned) items; absent on third-party Skinshark listings."
+                              },
                               "doppler": {
                                 "type": "object",
                                 "properties": {
@@ -1457,6 +1505,28 @@
                                   "name",
                                   "iconUrl"
                                 ]
+                              },
+                              "botInfo": {
+                                "type": "object",
+                                "properties": {
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "avatar": {
+                                    "type": "string"
+                                  },
+                                  "joined": {
+                                    "type": "string",
+                                    "format": "date-time"
+                                  },
+                                  "steamId": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "name"
+                                ],
+                                "description": "Holding bot identity. Present on autoseller-pool marketplace items."
                               }
                             },
                             "required": [
@@ -2101,6 +2171,10 @@
                               "paintSeed": {
                                 "type": "integer"
                               },
+                              "previewToken": {
+                                "type": "string",
+                                "description": "Steam inspect/preview token for rendering the item's in-game preview. Present on inventory and autoseller-pool (self-owned) items; absent on third-party Skinshark listings."
+                              },
                               "doppler": {
                                 "type": "object",
                                 "properties": {
@@ -2189,6 +2263,28 @@
                                   "name",
                                   "iconUrl"
                                 ]
+                              },
+                              "botInfo": {
+                                "type": "object",
+                                "properties": {
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "avatar": {
+                                    "type": "string"
+                                  },
+                                  "joined": {
+                                    "type": "string",
+                                    "format": "date-time"
+                                  },
+                                  "steamId": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "name"
+                                ],
+                                "description": "Holding bot identity. Present on autoseller-pool marketplace items."
                               }
                             },
                             "required": [
@@ -2901,6 +2997,10 @@
                               "paintSeed": {
                                 "type": "integer"
                               },
+                              "previewToken": {
+                                "type": "string",
+                                "description": "Steam inspect/preview token for rendering the item's in-game preview. Present on inventory and autoseller-pool (self-owned) items; absent on third-party Skinshark listings."
+                              },
                               "doppler": {
                                 "type": "object",
                                 "properties": {
@@ -2989,6 +3089,28 @@
                                   "name",
                                   "iconUrl"
                                 ]
+                              },
+                              "botInfo": {
+                                "type": "object",
+                                "properties": {
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "avatar": {
+                                    "type": "string"
+                                  },
+                                  "joined": {
+                                    "type": "string",
+                                    "format": "date-time"
+                                  },
+                                  "steamId": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "name"
+                                ],
+                                "description": "Holding bot identity. Present on autoseller-pool marketplace items."
                               }
                             },
                             "required": [
@@ -3404,7 +3526,7 @@
     "/secure/buy/quick": {
       "post": {
         "summary": "Quick-buy skins from the marketplace (merchant self-trade)",
-        "description": "Buys the N cheapest listings of a single item at or below a per-unit ceiling. CS2 only. `itemId` and the gross per-unit `maxPrice` (fee-inclusive) come from /secure/prices; `amount` is 1-200 and `delivery` is standard or instant. The trade starts empty and locks the worst-case total; the filled listings (possibly fewer than requested) and the refund of any unfilled / below-ceiling remainder settle asynchronously via the trade webhook.",
+        "description": "Buys the N cheapest listings of a single item at or below a per-unit ceiling. CS2 only. `itemId` and the gross per-unit `maxPrice` (fee-inclusive) come from /secure/prices; `amount` is 1-200 and `delivery` is standard or instant. Optionally pin a Doppler `phase` (e.g. 'Ruby') to buy only that phase, priced against the phase floor (not combinable with instant delivery). The trade starts empty and locks the worst-case total; the filled listings (possibly fewer than requested) and the refund of any unfilled / below-ceiling remainder settle asynchronously via the trade webhook.",
         "tags": [
           "Trading"
         ],
@@ -3441,6 +3563,20 @@
                       "instant"
                     ],
                     "default": "standard"
+                  },
+                  "phase": {
+                    "type": "string",
+                    "enum": [
+                      "Phase 1",
+                      "Phase 2",
+                      "Phase 3",
+                      "Phase 4",
+                      "Ruby",
+                      "Sapphire",
+                      "Black Pearl",
+                      "Emerald"
+                    ],
+                    "description": "Doppler phase to buy (e.g. 'Ruby'). Priced against the phase floor. Cannot be combined with delivery 'instant'."
                   },
                   "game": {
                     "type": "string",
@@ -3643,6 +3779,10 @@
                               "paintSeed": {
                                 "type": "integer"
                               },
+                              "previewToken": {
+                                "type": "string",
+                                "description": "Steam inspect/preview token for rendering the item's in-game preview. Present on inventory and autoseller-pool (self-owned) items; absent on third-party Skinshark listings."
+                              },
                               "doppler": {
                                 "type": "object",
                                 "properties": {
@@ -3731,6 +3871,28 @@
                                   "name",
                                   "iconUrl"
                                 ]
+                              },
+                              "botInfo": {
+                                "type": "object",
+                                "properties": {
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "avatar": {
+                                    "type": "string"
+                                  },
+                                  "joined": {
+                                    "type": "string",
+                                    "format": "date-time"
+                                  },
+                                  "steamId": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "name"
+                                ],
+                                "description": "Holding bot identity. Present on autoseller-pool marketplace items."
                               }
                             },
                             "required": [
@@ -4618,6 +4780,18 @@
             "required": false,
             "name": "perPage",
             "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "internal",
+                "skinshark"
+              ]
+            },
+            "required": false,
+            "name": "source",
+            "in": "query"
           }
         ],
         "responses": {
@@ -4739,6 +4913,10 @@
                               "paintSeed": {
                                 "type": "integer"
                               },
+                              "previewToken": {
+                                "type": "string",
+                                "description": "Steam inspect/preview token for rendering the item's in-game preview. Present on inventory and autoseller-pool (self-owned) items; absent on third-party Skinshark listings."
+                              },
                               "doppler": {
                                 "type": "object",
                                 "properties": {
@@ -4827,6 +5005,28 @@
                                   "name",
                                   "iconUrl"
                                 ]
+                              },
+                              "botInfo": {
+                                "type": "object",
+                                "properties": {
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "avatar": {
+                                    "type": "string"
+                                  },
+                                  "joined": {
+                                    "type": "string",
+                                    "format": "date-time"
+                                  },
+                                  "steamId": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "name"
+                                ],
+                                "description": "Holding bot identity. Present on autoseller-pool marketplace items."
                               }
                             },
                             "required": [
@@ -5269,6 +5469,10 @@
                           "paintSeed": {
                             "type": "integer"
                           },
+                          "previewToken": {
+                            "type": "string",
+                            "description": "Steam inspect/preview token for rendering the item's in-game preview. Present on inventory and autoseller-pool (self-owned) items; absent on third-party Skinshark listings."
+                          },
                           "doppler": {
                             "type": "object",
                             "properties": {
@@ -5357,6 +5561,28 @@
                               "name",
                               "iconUrl"
                             ]
+                          },
+                          "botInfo": {
+                            "type": "object",
+                            "properties": {
+                              "name": {
+                                "type": "string"
+                              },
+                              "avatar": {
+                                "type": "string"
+                              },
+                              "joined": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "steamId": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "name"
+                            ],
+                            "description": "Holding bot identity. Present on autoseller-pool marketplace items."
                           }
                         },
                         "required": [
@@ -5910,6 +6136,10 @@
                                     "paintSeed": {
                                       "type": "integer"
                                     },
+                                    "previewToken": {
+                                      "type": "string",
+                                      "description": "Steam inspect/preview token for rendering the item's in-game preview. Present on inventory and autoseller-pool (self-owned) items; absent on third-party Skinshark listings."
+                                    },
                                     "doppler": {
                                       "type": "object",
                                       "properties": {
@@ -5998,6 +6228,28 @@
                                         "name",
                                         "iconUrl"
                                       ]
+                                    },
+                                    "botInfo": {
+                                      "type": "object",
+                                      "properties": {
+                                        "name": {
+                                          "type": "string"
+                                        },
+                                        "avatar": {
+                                          "type": "string"
+                                        },
+                                        "joined": {
+                                          "type": "string",
+                                          "format": "date-time"
+                                        },
+                                        "steamId": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "name"
+                                      ],
+                                      "description": "Holding bot identity. Present on autoseller-pool marketplace items."
                                     }
                                   },
                                   "required": [
@@ -6566,6 +6818,10 @@
                               "paintSeed": {
                                 "type": "integer"
                               },
+                              "previewToken": {
+                                "type": "string",
+                                "description": "Steam inspect/preview token for rendering the item's in-game preview. Present on inventory and autoseller-pool (self-owned) items; absent on third-party Skinshark listings."
+                              },
                               "doppler": {
                                 "type": "object",
                                 "properties": {
@@ -6654,6 +6910,28 @@
                                   "name",
                                   "iconUrl"
                                 ]
+                              },
+                              "botInfo": {
+                                "type": "object",
+                                "properties": {
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "avatar": {
+                                    "type": "string"
+                                  },
+                                  "joined": {
+                                    "type": "string",
+                                    "format": "date-time"
+                                  },
+                                  "steamId": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "name"
+                                ],
+                                "description": "Holding bot identity. Present on autoseller-pool marketplace items."
                               }
                             },
                             "required": [
@@ -7230,6 +7508,10 @@
                               "paintSeed": {
                                 "type": "integer"
                               },
+                              "previewToken": {
+                                "type": "string",
+                                "description": "Steam inspect/preview token for rendering the item's in-game preview. Present on inventory and autoseller-pool (self-owned) items; absent on third-party Skinshark listings."
+                              },
                               "doppler": {
                                 "type": "object",
                                 "properties": {
@@ -7318,6 +7600,28 @@
                                   "name",
                                   "iconUrl"
                                 ]
+                              },
+                              "botInfo": {
+                                "type": "object",
+                                "properties": {
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "avatar": {
+                                    "type": "string"
+                                  },
+                                  "joined": {
+                                    "type": "string",
+                                    "format": "date-time"
+                                  },
+                                  "steamId": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "name"
+                                ],
+                                "description": "Holding bot identity. Present on autoseller-pool marketplace items."
                               }
                             },
                             "required": [
@@ -7890,6 +8194,10 @@
                                     "paintSeed": {
                                       "type": "integer"
                                     },
+                                    "previewToken": {
+                                      "type": "string",
+                                      "description": "Steam inspect/preview token for rendering the item's in-game preview. Present on inventory and autoseller-pool (self-owned) items; absent on third-party Skinshark listings."
+                                    },
                                     "doppler": {
                                       "type": "object",
                                       "properties": {
@@ -7978,6 +8286,28 @@
                                         "name",
                                         "iconUrl"
                                       ]
+                                    },
+                                    "botInfo": {
+                                      "type": "object",
+                                      "properties": {
+                                        "name": {
+                                          "type": "string"
+                                        },
+                                        "avatar": {
+                                          "type": "string"
+                                        },
+                                        "joined": {
+                                          "type": "string",
+                                          "format": "date-time"
+                                        },
+                                        "steamId": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "name"
+                                      ],
+                                      "description": "Holding bot identity. Present on autoseller-pool marketplace items."
                                     }
                                   },
                                   "required": [
@@ -8933,6 +9263,10 @@
                               "paintSeed": {
                                 "type": "integer"
                               },
+                              "previewToken": {
+                                "type": "string",
+                                "description": "Steam inspect/preview token for rendering the item's in-game preview. Present on inventory and autoseller-pool (self-owned) items; absent on third-party Skinshark listings."
+                              },
                               "doppler": {
                                 "type": "object",
                                 "properties": {
@@ -9021,6 +9355,28 @@
                                   "name",
                                   "iconUrl"
                                 ]
+                              },
+                              "botInfo": {
+                                "type": "object",
+                                "properties": {
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "avatar": {
+                                    "type": "string"
+                                  },
+                                  "joined": {
+                                    "type": "string",
+                                    "format": "date-time"
+                                  },
+                                  "steamId": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "name"
+                                ],
+                                "description": "Holding bot identity. Present on autoseller-pool marketplace items."
                               }
                             },
                             "required": [
@@ -9463,6 +9819,10 @@
                           "paintSeed": {
                             "type": "integer"
                           },
+                          "previewToken": {
+                            "type": "string",
+                            "description": "Steam inspect/preview token for rendering the item's in-game preview. Present on inventory and autoseller-pool (self-owned) items; absent on third-party Skinshark listings."
+                          },
                           "doppler": {
                             "type": "object",
                             "properties": {
@@ -9551,6 +9911,28 @@
                               "name",
                               "iconUrl"
                             ]
+                          },
+                          "botInfo": {
+                            "type": "object",
+                            "properties": {
+                              "name": {
+                                "type": "string"
+                              },
+                              "avatar": {
+                                "type": "string"
+                              },
+                              "joined": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "steamId": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "name"
+                            ],
+                            "description": "Holding bot identity. Present on autoseller-pool marketplace items."
                           }
                         },
                         "required": [
@@ -10113,6 +10495,10 @@
                               "paintSeed": {
                                 "type": "integer"
                               },
+                              "previewToken": {
+                                "type": "string",
+                                "description": "Steam inspect/preview token for rendering the item's in-game preview. Present on inventory and autoseller-pool (self-owned) items; absent on third-party Skinshark listings."
+                              },
                               "doppler": {
                                 "type": "object",
                                 "properties": {
@@ -10201,6 +10587,28 @@
                                   "name",
                                   "iconUrl"
                                 ]
+                              },
+                              "botInfo": {
+                                "type": "object",
+                                "properties": {
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "avatar": {
+                                    "type": "string"
+                                  },
+                                  "joined": {
+                                    "type": "string",
+                                    "format": "date-time"
+                                  },
+                                  "steamId": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "name"
+                                ],
+                                "description": "Holding bot identity. Present on autoseller-pool marketplace items."
                               }
                             },
                             "required": [
@@ -10849,6 +11257,10 @@
                               "paintSeed": {
                                 "type": "integer"
                               },
+                              "previewToken": {
+                                "type": "string",
+                                "description": "Steam inspect/preview token for rendering the item's in-game preview. Present on inventory and autoseller-pool (self-owned) items; absent on third-party Skinshark listings."
+                              },
                               "doppler": {
                                 "type": "object",
                                 "properties": {
@@ -10937,6 +11349,28 @@
                                   "name",
                                   "iconUrl"
                                 ]
+                              },
+                              "botInfo": {
+                                "type": "object",
+                                "properties": {
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "avatar": {
+                                    "type": "string"
+                                  },
+                                  "joined": {
+                                    "type": "string",
+                                    "format": "date-time"
+                                  },
+                                  "steamId": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "name"
+                                ],
+                                "description": "Holding bot identity. Present on autoseller-pool marketplace items."
                               }
                             },
                             "required": [
@@ -11293,7 +11727,7 @@
     "/client/trading/withdraw/quick": {
       "post": {
         "summary": "Initiate a quick skin withdrawal",
-        "description": "Buys the N cheapest listings of a single item at or below a per-unit ceiling, instead of naming specific listings. CS2 only. `itemId` and the gross per-unit `maxPrice` (fee-inclusive) come from /secure/prices; `amount` is the quantity (1-200) and `delivery` is standard or instant. The trade starts empty and locks the worst-case total; the filled listings (which may be fewer than requested) and the refund of any unfilled / below-ceiling remainder settle asynchronously via the trade webhook.",
+        "description": "Buys the N cheapest listings of a single item at or below a per-unit ceiling, instead of naming specific listings. CS2 only. `itemId` and the gross per-unit `maxPrice` (fee-inclusive) come from /secure/prices; `amount` is the quantity (1-200) and `delivery` is standard or instant. Optionally pin a Doppler `phase` (e.g. 'Ruby') to buy only that phase, priced against the phase floor (not combinable with instant delivery). The trade starts empty and locks the worst-case total; the filled listings (which may be fewer than requested) and the refund of any unfilled / below-ceiling remainder settle asynchronously via the trade webhook.",
         "tags": [
           "Withdrawals"
         ],
@@ -11330,6 +11764,20 @@
                       "instant"
                     ],
                     "default": "standard"
+                  },
+                  "phase": {
+                    "type": "string",
+                    "enum": [
+                      "Phase 1",
+                      "Phase 2",
+                      "Phase 3",
+                      "Phase 4",
+                      "Ruby",
+                      "Sapphire",
+                      "Black Pearl",
+                      "Emerald"
+                    ],
+                    "description": "Doppler phase to buy (e.g. 'Ruby'). Priced against the phase floor. Cannot be combined with delivery 'instant'."
                   },
                   "game": {
                     "type": "string",
@@ -11527,6 +11975,10 @@
                               "paintSeed": {
                                 "type": "integer"
                               },
+                              "previewToken": {
+                                "type": "string",
+                                "description": "Steam inspect/preview token for rendering the item's in-game preview. Present on inventory and autoseller-pool (self-owned) items; absent on third-party Skinshark listings."
+                              },
                               "doppler": {
                                 "type": "object",
                                 "properties": {
@@ -11615,6 +12067,28 @@
                                   "name",
                                   "iconUrl"
                                 ]
+                              },
+                              "botInfo": {
+                                "type": "object",
+                                "properties": {
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "avatar": {
+                                    "type": "string"
+                                  },
+                                  "joined": {
+                                    "type": "string",
+                                    "format": "date-time"
+                                  },
+                                  "steamId": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "name"
+                                ],
+                                "description": "Holding bot identity. Present on autoseller-pool marketplace items."
                               }
                             },
                             "required": [

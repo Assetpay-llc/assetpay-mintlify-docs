@@ -95,7 +95,9 @@ interface Item {
   color?: string;                // Rarity color hex (e.g. "#EB4B4B")
   wear?: string;                 // Float value as string
   paintSeed?: number;            // Paint seed number
-  propId?: string;               // Steam inspect-link item_certificate (CS2)
+  previewToken?: string;         // Steam inspect/preview token (CS2). Present on inventory and
+                                 //   autoseller-pool (self-owned) items; absent on third-party
+                                 //   marketplace listings.
   doppler?: Doppler;             // Doppler phase details
   fade?: Fade;                   // Fade percentage details
   hardened?: Hardened;           // Case Hardened pattern details
@@ -103,6 +105,14 @@ interface Item {
   // Applied items
   stickers?: Sticker[];          // Applied stickers
   charm?: Charm;                 // Applied charm (CS2 only)
+
+  // Market-specific
+  botInfo?: {                    // Holding bot identity — present on autoseller-pool market items
+    name: string;
+    avatar?: string;
+    steamId?: string;
+    joined?: Date;
+  };
 
   // Withdrawal-specific (only set on items belonging to a withdraw trade)
   status?: TradeStatus;          // Per-item purchase status, mirrors Trade.status

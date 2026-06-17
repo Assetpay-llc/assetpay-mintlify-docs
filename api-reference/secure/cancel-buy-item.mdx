@@ -1,6 +1,6 @@
 ---
 title: "Cancel Buy Item (Self-Trade)"
-description: "Cancel a single undelivered item from a merchant self-trade buy (CS2 / Skinshark only)."
+description: "Cancel a single undelivered item from a merchant self-trade buy (CS2 / Assetpay only)."
 ---
 
 # POST /secure/buy/{tradeId}/items/{itemId}/cancel
@@ -11,7 +11,7 @@ Merchant-facing equivalent of [`POST /client/trading/withdraw/{tradeId}/items/{i
 **Scope:** `CORE_ACCESS`
 
 <Note>
-CS2 (Skinshark) items only. Rust buys are fulfilled by a polling supplier with no cancel API and cannot be cancelled. Only **self-trade** buys (`source: "self"`) are cancellable through this endpoint.
+CS2 (Assetpay) items only. Rust buys are fulfilled by a polling supplier with no cancel API and cannot be cancelled. Only **self-trade** buys (`source: "self"`) are cancellable through this endpoint.
 </Note>
 
 ## Request
@@ -33,7 +33,7 @@ api-key: ap_...
 A cancel is only accepted when **all** of the following hold:
 
 - The item belongs to a **self-trade** (`source: "self"`) **buy** owned by the authenticated merchant.
-- The item is a **CS2 (Skinshark)** item.
+- The item is a **CS2 (Assetpay)** item.
 - The item is **at least 30 minutes old** (measured from when it was created).
 - The item is **not** already in a terminal state (`completed`, `failed`, `reverted`, `canceled`).
 
@@ -65,6 +65,6 @@ A `200` only confirms the marketplace **accepted** the cancellation. AssetPay do
 | Code | Key | When |
 |------|-----|------|
 | 27 | `TRADE_CANCEL_TOO_SOON` | The item is younger than 30 minutes. Retry after the 30-minute window. |
-| 28 | `TRADE_NOT_CANCELLABLE` | Not cancellable: not a withdrawal, not a CS2/Skinshark item, already in a terminal state, or the marketplace rejected the cancel. |
+| 28 | `TRADE_NOT_CANCELLABLE` | Not cancellable: not a withdrawal, not a CS2/Assetpay item, already in a terminal state, or the marketplace rejected the cancel. |
 | 1300 | `FORBIDDEN` | The trade is not a self-trade owned by the authenticated merchant. |
 | 2201 | `ITEM_NOT_FOUND` | No item with that `itemId` exists under the given `tradeId`. |

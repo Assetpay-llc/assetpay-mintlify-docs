@@ -24,20 +24,19 @@ api-key: YOUR_API_KEY
 
 ## Response (CS2)
 
+Each item carries a `deposit` price (what AssetPay pays you for the item) and a `withdraw` price split by delivery mode (the fee-inclusive buy price you can pass back to `/secure/buy`). Either `withdraw` value is `null` when there's no floor.
+
 ```json
 {
   "requestId": "...",
   "success": true,
   "data": [
     {
+      "itemId": "0010f8d48278ccb8",
       "marketHashName": "AK-47 | Redline (Field-Tested)",
       "accepted": true,
-      "price": 10.75
-    },
-    {
-      "marketHashName": "AWP | Dragon Lore (Factory New)",
-      "accepted": true,
-      "price": 1720.50
+      "deposit": 10.75,
+      "withdraw": { "standard": 11.40, "instant": 12.80 }
     }
   ]
 }
@@ -47,9 +46,41 @@ api-key: YOUR_API_KEY
 
 | Field | Type | Description |
 |-------|------|-------------|
+| `itemId` | string \| null | Assetpay catalog item id; `null` when there's no withdraw floor |
 | `marketHashName` | string | Item's market hash name |
-| `accepted` | boolean | Whether the item is currently accepted for trading |
-| `price` | number | Current offer price in USD |
+| `accepted` | boolean | Whether the item is accepted for deposit (`deposit` > 0) |
+| `deposit` | number | Deposit offer price in USD (what we pay for the item) |
+| `withdraw.standard` | number \| null | Fee-inclusive standard-delivery buy price in USD |
+| `withdraw.instant` | number \| null | Fee-inclusive instant-delivery buy price in USD |
+| `phases` | array | Present **only on Doppler items** — per-phase breakdown (see below) |
+
+### Doppler items
+
+Doppler skins are returned as a **single entry** with a `phases[]` breakdown rather than one row per phase. The top-level `deposit`/`withdraw` carry the floor (cheapest phase / grouped floor) as a default. Per-phase `withdraw` is **standard-only** (the phase floor) — instant delivery is not phase-specific, so use the top-level `withdraw.instant` for an any-phase instant buy.
+
+```json
+{
+  "itemId": "c5_karambit_doppler_fn",
+  "marketHashName": "★ Karambit | Doppler (Factory New)",
+  "accepted": true,
+  "deposit": 360.00,
+  "withdraw": { "standard": 379.40, "instant": 1450.00 },
+  "phases": [
+    { "phase": "Phase 1", "accepted": true, "deposit": 380.00, "withdraw": 402.26 },
+    { "phase": "Phase 2", "accepted": true, "deposit": 360.00, "withdraw": 379.40 },
+    { "phase": "Ruby",    "accepted": true, "deposit": 1780.00, "withdraw": 1875.92 }
+  ]
+}
+```
+
+| Phase field | Type | Description |
+|-------------|------|-------------|
+| `phase` | string | Phase label: `Phase 1`–`Phase 4`, `Ruby`, `Sapphire`, `Black Pearl`, `Emerald` |
+| `accepted` | boolean | Whether this phase is accepted for deposit (`deposit` > 0) |
+| `deposit` | number | Deposit offer price in USD for this phase |
+| `withdraw` | number \| null | Fee-inclusive standard buy price for this phase; `null` when unavailable |
+
+To buy a specific phase, pass the `phase` to [`POST /secure/buy/quick`](/api-reference/secure/buy-quick).
 
 ## Response (Rust)
 
@@ -61,8 +92,8 @@ api-key: YOUR_API_KEY
     {
       "marketHashName": "Large Wood Box",
       "accepted": true,
-      "price": 0.12,
-      "maxAmount": 100
+      "deposit": 0.12,
+      "withdraw": 0.14
     }
   ]
 }
@@ -73,9 +104,9 @@ api-key: YOUR_API_KEY
 | Field | Type | Description |
 |-------|------|-------------|
 | `marketHashName` | string | Item's market hash name |
-| `accepted` | boolean | Whether the item is currently accepted for trading |
-| `price` | number | Current offer price per unit (USD) |
-| `maxAmount` | number | Maximum stack amount accepted in a single trade |
+| `accepted` | boolean | Whether the item is accepted for deposit (`deposit` > 0) |
+| `deposit` | number | Deposit offer price per unit (USD) |
+| `withdraw` | number \| null | Fee-inclusive buy price in USD; `null` when unavailable |
 
 ## Rate Limits
 

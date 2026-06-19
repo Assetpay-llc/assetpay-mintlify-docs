@@ -17,7 +17,7 @@ Every trade follows a state machine. Understanding the status transitions is cri
 | `hold` | User accepted and the items are in Steam's hold window (typically 7 days). Carries `offerID` and `holdEndDate`. |
 | `completed` | Trade finished successfully (hold expired with no reversal). |
 | `canceled` | Trade was canceled before completion — admin/user cancel, or a deposit offer that was auto-canceled after sitting unaccepted past its window. |
-| `declined` | The end user actively declined (or let expire) the Steam trade offer. **Deposits:** no items received, no credit. **Withdrawals:** delivery didn't happen and your merchant wallet is refunded — handle it like `failed`. |
+| `declined` | The end user actively declined (or let expire) the Steam trade offer. **Deposits:** no items received, no credit. **Withdrawals:** delivery didn't happen; your merchant wallet is refunded **minus a 2% buyer-decline penalty** (capped at $9). |
 | `failed` | Trade failed at some point in the process (offer expired, merchant rejected the `initiated` callback, supplier purchase failed, error). |
 | `reverted` | A previously completed trade was reversed by the upstream supplier or the end user (see `revertedBy`). |
 
@@ -142,7 +142,7 @@ These statuses are final and won't change:
 
 - **`completed`**: The trade is done. Balance has been settled. (Can still transition to `reverted` if Steam reverses the trade afterward.)
 - **`canceled`**: The trade was canceled before processing started. No balance settlement.
-- **`declined`**: The end user declined the trade offer. Deposits: no items received, no settlement. Withdrawals: delivery didn't happen — refund as you would a `failed` trade (your merchant wallet is auto-refunded).
+- **`declined`**: The end user declined the trade offer. Deposits: no items received, no settlement. Withdrawals: delivery didn't happen — your merchant wallet is auto-refunded **minus a 2% buyer-decline penalty** (capped at $9), so this refunds slightly less than `failed`.
 - **`failed`**: The trade didn't go through. For withdrawals where you previously deducted the user's balance, refund it.
 - **`reverted`**: The trade was reversed after being settled. Check `revertedBy` to understand who initiated it.
 

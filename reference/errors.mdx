@@ -130,7 +130,7 @@ The errors above are returned **synchronously** when a call is rejected. A withd
 | `MARKET_UNAVAILABLE` | Temporary upstream / our-side issue — retry later |
 | `PURCHASE_FAILED` | Unclassified failure (catch-all) |
 
-`canceled` and `declined` items carry no code — the status is the reason. See [Withdrawals → Per-Item Failure Reasons](/guides/withdrawals#per-item-failure-reasons) for handling guidance.
+`canceled` and `declined` items carry no code — the status is the reason. A `declined` withdrawal is buyer fault: your merchant wallet is refunded **minus a 2% penalty** (capped at $9). See [Withdrawals → Per-Item Failure Reasons](/guides/withdrawals#per-item-failure-reasons) for handling guidance.
 
 ## Wallet / Funding Errors
 

@@ -149,7 +149,7 @@ All rejection paths mark the trade as `failed` and refund your merchant wallet a
 | `hold` | Item sourced and the Steam trade offer accepted by the user, hold running (`offerID` + `holdEndDate` present). Acknowledge with `200`. |
 | `completed` | Delivery complete. No balance action needed. |
 | `failed` | Trade did not go through. Refund `totalPrice` if you previously deducted it. The failed item(s) carry an `error` code — see [Per-Item Failure Reasons](#per-item-failure-reasons). |
-| `declined` | The user declined / let the Steam offer expire. Your merchant wallet is auto-refunded — refund `totalPrice` (or apply your own policy) if you previously deducted it. |
+| `declined` | The user declined / let the Steam offer expire (buyer fault). AssetPay auto-refunds your merchant wallet **minus a 2% penalty** (capped at $9). Decide your own user-facing refund — refund in full and absorb the 2%, or pass it on. |
 | `canceled` | Trade canceled before processing. Refund `totalPrice` if you previously deducted it. |
 | `reverted` | A completed withdrawal was reversed. Refund `totalPrice`. Check `revertedBy`. |
 

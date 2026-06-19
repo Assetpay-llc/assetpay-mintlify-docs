@@ -210,7 +210,7 @@ type TradeStatus =
   | 'completed'   // Trade finished successfully
   | 'failed'      // Trade failed at some point
   | 'canceled'    // Trade was canceled before completion (no penalty)
-  | 'declined'    // End user declined / let the Steam offer expire (deposits and withdrawals)
+  | 'declined'    // End user declined / let the Steam offer expire. Withdrawals: refund minus a 2% penalty
   | 'reverted';   // Previously completed trade was reversed (see revertedBy)
 ```
 

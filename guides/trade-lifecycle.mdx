@@ -17,7 +17,7 @@ Every trade follows a state machine. Understanding the status transitions is cri
 | `hold` | User accepted and the items are in Steam's hold window (typically 7 days). Carries `offerID` and `holdEndDate`. |
 | `completed` | Trade finished successfully (hold expired with no reversal). |
 | `canceled` | Trade was canceled before completion — admin/user cancel, or a deposit offer that was auto-canceled after sitting unaccepted past its window. |
-| `declined` | **Deposits only.** The end user actively declined the Steam trade offer. No items were received and no credit is applied. |
+| `declined` | The end user actively declined (or let expire) the Steam trade offer. **Deposits:** no items received, no credit. **Withdrawals:** delivery didn't happen and your merchant wallet is refunded — handle it like `failed`. |
 | `failed` | Trade failed at some point in the process (offer expired, merchant rejected the `initiated` callback, supplier purchase failed, error). |
 | `reverted` | A previously completed trade was reversed by the upstream supplier or the end user (see `revertedBy`). |
 
@@ -81,7 +81,8 @@ initiated
 pending ──────► failed   (supplier purchase failed)
     │
     ▼
-active ───────► failed   (Steam offer expired / declined)
+active ───────► failed     (Steam offer expired / account restricted)
+    │       └──► declined  (user declined the Steam offer)
     │
     ▼
   hold ───────► failed
@@ -100,7 +101,8 @@ completed
 - **pending → active**: Item sourced, **Steam trade offer sent to the user** — awaiting acceptance
 - **pending → failed**: Supplier purchase could not be completed
 - **active → hold**: User accepted the Steam trade offer, Steam hold period started
-- **active → failed**: The Steam offer expired or was declined
+- **active → failed**: The Steam offer expired or the recipient's account is restricted
+- **active → declined**: The end user actively declined the Steam offer (your merchant wallet is refunded)
 - **hold → completed**: 7-day hold ended, no reversal detected
 - **hold → failed**: Items reversed by Steam during the hold period
 - **hold → reverted**: Trade was reversed by the supplier or user during the hold period (check `revertedBy`)
@@ -140,7 +142,7 @@ These statuses are final and won't change:
 
 - **`completed`**: The trade is done. Balance has been settled. (Can still transition to `reverted` if Steam reverses the trade afterward.)
 - **`canceled`**: The trade was canceled before processing started. No balance settlement.
-- **`declined`**: (Deposits only.) The end user declined the trade offer. No items received, no balance settlement.
+- **`declined`**: The end user declined the trade offer. Deposits: no items received, no settlement. Withdrawals: delivery didn't happen — refund as you would a `failed` trade (your merchant wallet is auto-refunded).
 - **`failed`**: The trade didn't go through. For withdrawals where you previously deducted the user's balance, refund it.
 - **`reverted`**: The trade was reversed after being settled. Check `revertedBy` to understand who initiated it.
 

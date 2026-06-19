@@ -1364,6 +1364,18 @@
                                 ],
                                 "description": "Per-item status (withdrawals only)"
                               },
+                              "error": {
+                                "type": "string",
+                                "enum": [
+                                  "LISTING_UNAVAILABLE",
+                                  "PRICE_CHANGED",
+                                  "TRADE_URL_INVALID",
+                                  "STEAM_ACCOUNT_RESTRICTED",
+                                  "MARKET_UNAVAILABLE",
+                                  "PURCHASE_FAILED"
+                                ],
+                                "description": "Failure code for a failed withdraw item (withdrawals only)"
+                              },
                               "marketPrice": {
                                 "type": "number",
                                 "description": "BUFF163 market price in USD"
@@ -2122,6 +2134,18 @@
                                 ],
                                 "description": "Per-item status (withdrawals only)"
                               },
+                              "error": {
+                                "type": "string",
+                                "enum": [
+                                  "LISTING_UNAVAILABLE",
+                                  "PRICE_CHANGED",
+                                  "TRADE_URL_INVALID",
+                                  "STEAM_ACCOUNT_RESTRICTED",
+                                  "MARKET_UNAVAILABLE",
+                                  "PURCHASE_FAILED"
+                                ],
+                                "description": "Failure code for a failed withdraw item (withdrawals only)"
+                              },
                               "marketPrice": {
                                 "type": "number",
                                 "description": "BUFF163 market price in USD"
@@ -2358,7 +2382,8 @@
                           ]
                         },
                         "error": {
-                          "type": "string"
+                          "type": "string",
+                          "description": "Trade-level failure reason. Withdraw: a TradeFailureCode, set only when the whole trade failed with one shared cause. Deposit: a Steam job error key."
                         },
                         "readyAt": {
                           "type": "string",
@@ -2948,6 +2973,18 @@
                                 ],
                                 "description": "Per-item status (withdrawals only)"
                               },
+                              "error": {
+                                "type": "string",
+                                "enum": [
+                                  "LISTING_UNAVAILABLE",
+                                  "PRICE_CHANGED",
+                                  "TRADE_URL_INVALID",
+                                  "STEAM_ACCOUNT_RESTRICTED",
+                                  "MARKET_UNAVAILABLE",
+                                  "PURCHASE_FAILED"
+                                ],
+                                "description": "Failure code for a failed withdraw item (withdrawals only)"
+                              },
                               "marketPrice": {
                                 "type": "number",
                                 "description": "BUFF163 market price in USD"
@@ -3184,7 +3221,8 @@
                           ]
                         },
                         "error": {
-                          "type": "string"
+                          "type": "string",
+                          "description": "Trade-level failure reason. Withdraw: a TradeFailureCode, set only when the whole trade failed with one shared cause. Deposit: a Steam job error key."
                         },
                         "readyAt": {
                           "type": "string",
@@ -3730,6 +3768,18 @@
                                 ],
                                 "description": "Per-item status (withdrawals only)"
                               },
+                              "error": {
+                                "type": "string",
+                                "enum": [
+                                  "LISTING_UNAVAILABLE",
+                                  "PRICE_CHANGED",
+                                  "TRADE_URL_INVALID",
+                                  "STEAM_ACCOUNT_RESTRICTED",
+                                  "MARKET_UNAVAILABLE",
+                                  "PURCHASE_FAILED"
+                                ],
+                                "description": "Failure code for a failed withdraw item (withdrawals only)"
+                              },
                               "marketPrice": {
                                 "type": "number",
                                 "description": "BUFF163 market price in USD"
@@ -3966,7 +4016,8 @@
                           ]
                         },
                         "error": {
-                          "type": "string"
+                          "type": "string",
+                          "description": "Trade-level failure reason. Withdraw: a TradeFailureCode, set only when the whole trade failed with one shared cause. Deposit: a Steam job error key."
                         },
                         "readyAt": {
                           "type": "string",
@@ -4864,6 +4915,18 @@
                                 ],
                                 "description": "Per-item status (withdrawals only)"
                               },
+                              "error": {
+                                "type": "string",
+                                "enum": [
+                                  "LISTING_UNAVAILABLE",
+                                  "PRICE_CHANGED",
+                                  "TRADE_URL_INVALID",
+                                  "STEAM_ACCOUNT_RESTRICTED",
+                                  "MARKET_UNAVAILABLE",
+                                  "PURCHASE_FAILED"
+                                ],
+                                "description": "Failure code for a failed withdraw item (withdrawals only)"
+                              },
                               "marketPrice": {
                                 "type": "number",
                                 "description": "BUFF163 market price in USD"
@@ -5419,6 +5482,18 @@
                               "reverted"
                             ],
                             "description": "Per-item status (withdrawals only)"
+                          },
+                          "error": {
+                            "type": "string",
+                            "enum": [
+                              "LISTING_UNAVAILABLE",
+                              "PRICE_CHANGED",
+                              "TRADE_URL_INVALID",
+                              "STEAM_ACCOUNT_RESTRICTED",
+                              "MARKET_UNAVAILABLE",
+                              "PURCHASE_FAILED"
+                            ],
+                            "description": "Failure code for a failed withdraw item (withdrawals only)"
                           },
                           "marketPrice": {
                             "type": "number",
@@ -6087,6 +6162,18 @@
                                       ],
                                       "description": "Per-item status (withdrawals only)"
                                     },
+                                    "error": {
+                                      "type": "string",
+                                      "enum": [
+                                        "LISTING_UNAVAILABLE",
+                                        "PRICE_CHANGED",
+                                        "TRADE_URL_INVALID",
+                                        "STEAM_ACCOUNT_RESTRICTED",
+                                        "MARKET_UNAVAILABLE",
+                                        "PURCHASE_FAILED"
+                                      ],
+                                      "description": "Failure code for a failed withdraw item (withdrawals only)"
+                                    },
                                     "marketPrice": {
                                       "type": "number",
                                       "description": "BUFF163 market price in USD"
@@ -6323,7 +6410,8 @@
                                 ]
                               },
                               "error": {
-                                "type": "string"
+                                "type": "string",
+                                "description": "Trade-level failure reason. Withdraw: a TradeFailureCode, set only when the whole trade failed with one shared cause. Deposit: a Steam job error key."
                               },
                               "readyAt": {
                                 "type": "string",
@@ -6769,6 +6857,18 @@
                                 ],
                                 "description": "Per-item status (withdrawals only)"
                               },
+                              "error": {
+                                "type": "string",
+                                "enum": [
+                                  "LISTING_UNAVAILABLE",
+                                  "PRICE_CHANGED",
+                                  "TRADE_URL_INVALID",
+                                  "STEAM_ACCOUNT_RESTRICTED",
+                                  "MARKET_UNAVAILABLE",
+                                  "PURCHASE_FAILED"
+                                ],
+                                "description": "Failure code for a failed withdraw item (withdrawals only)"
+                              },
                               "marketPrice": {
                                 "type": "number",
                                 "description": "BUFF163 market price in USD"
@@ -7005,7 +7105,8 @@
                           ]
                         },
                         "error": {
-                          "type": "string"
+                          "type": "string",
+                          "description": "Trade-level failure reason. Withdraw: a TradeFailureCode, set only when the whole trade failed with one shared cause. Deposit: a Steam job error key."
                         },
                         "readyAt": {
                           "type": "string",
@@ -7458,6 +7559,18 @@
                                   "reverted"
                                 ],
                                 "description": "Per-item status (withdrawals only)"
+                              },
+                              "error": {
+                                "type": "string",
+                                "enum": [
+                                  "LISTING_UNAVAILABLE",
+                                  "PRICE_CHANGED",
+                                  "TRADE_URL_INVALID",
+                                  "STEAM_ACCOUNT_RESTRICTED",
+                                  "MARKET_UNAVAILABLE",
+                                  "PURCHASE_FAILED"
+                                ],
+                                "description": "Failure code for a failed withdraw item (withdrawals only)"
                               },
                               "marketPrice": {
                                 "type": "number",
@@ -8145,6 +8258,18 @@
                                       ],
                                       "description": "Per-item status (withdrawals only)"
                                     },
+                                    "error": {
+                                      "type": "string",
+                                      "enum": [
+                                        "LISTING_UNAVAILABLE",
+                                        "PRICE_CHANGED",
+                                        "TRADE_URL_INVALID",
+                                        "STEAM_ACCOUNT_RESTRICTED",
+                                        "MARKET_UNAVAILABLE",
+                                        "PURCHASE_FAILED"
+                                      ],
+                                      "description": "Failure code for a failed withdraw item (withdrawals only)"
+                                    },
                                     "marketPrice": {
                                       "type": "number",
                                       "description": "BUFF163 market price in USD"
@@ -8381,7 +8506,8 @@
                                 ]
                               },
                               "error": {
-                                "type": "string"
+                                "type": "string",
+                                "description": "Trade-level failure reason. Withdraw: a TradeFailureCode, set only when the whole trade failed with one shared cause. Deposit: a Steam job error key."
                               },
                               "readyAt": {
                                 "type": "string",
@@ -9214,6 +9340,18 @@
                                 ],
                                 "description": "Per-item status (withdrawals only)"
                               },
+                              "error": {
+                                "type": "string",
+                                "enum": [
+                                  "LISTING_UNAVAILABLE",
+                                  "PRICE_CHANGED",
+                                  "TRADE_URL_INVALID",
+                                  "STEAM_ACCOUNT_RESTRICTED",
+                                  "MARKET_UNAVAILABLE",
+                                  "PURCHASE_FAILED"
+                                ],
+                                "description": "Failure code for a failed withdraw item (withdrawals only)"
+                              },
                               "marketPrice": {
                                 "type": "number",
                                 "description": "BUFF163 market price in USD"
@@ -9769,6 +9907,18 @@
                               "reverted"
                             ],
                             "description": "Per-item status (withdrawals only)"
+                          },
+                          "error": {
+                            "type": "string",
+                            "enum": [
+                              "LISTING_UNAVAILABLE",
+                              "PRICE_CHANGED",
+                              "TRADE_URL_INVALID",
+                              "STEAM_ACCOUNT_RESTRICTED",
+                              "MARKET_UNAVAILABLE",
+                              "PURCHASE_FAILED"
+                            ],
+                            "description": "Failure code for a failed withdraw item (withdrawals only)"
                           },
                           "marketPrice": {
                             "type": "number",
@@ -10446,6 +10596,18 @@
                                 ],
                                 "description": "Per-item status (withdrawals only)"
                               },
+                              "error": {
+                                "type": "string",
+                                "enum": [
+                                  "LISTING_UNAVAILABLE",
+                                  "PRICE_CHANGED",
+                                  "TRADE_URL_INVALID",
+                                  "STEAM_ACCOUNT_RESTRICTED",
+                                  "MARKET_UNAVAILABLE",
+                                  "PURCHASE_FAILED"
+                                ],
+                                "description": "Failure code for a failed withdraw item (withdrawals only)"
+                              },
                               "marketPrice": {
                                 "type": "number",
                                 "description": "BUFF163 market price in USD"
@@ -10682,7 +10844,8 @@
                           ]
                         },
                         "error": {
-                          "type": "string"
+                          "type": "string",
+                          "description": "Trade-level failure reason. Withdraw: a TradeFailureCode, set only when the whole trade failed with one shared cause. Deposit: a Steam job error key."
                         },
                         "readyAt": {
                           "type": "string",
@@ -11208,6 +11371,18 @@
                                 ],
                                 "description": "Per-item status (withdrawals only)"
                               },
+                              "error": {
+                                "type": "string",
+                                "enum": [
+                                  "LISTING_UNAVAILABLE",
+                                  "PRICE_CHANGED",
+                                  "TRADE_URL_INVALID",
+                                  "STEAM_ACCOUNT_RESTRICTED",
+                                  "MARKET_UNAVAILABLE",
+                                  "PURCHASE_FAILED"
+                                ],
+                                "description": "Failure code for a failed withdraw item (withdrawals only)"
+                              },
                               "marketPrice": {
                                 "type": "number",
                                 "description": "BUFF163 market price in USD"
@@ -11444,7 +11619,8 @@
                           ]
                         },
                         "error": {
-                          "type": "string"
+                          "type": "string",
+                          "description": "Trade-level failure reason. Withdraw: a TradeFailureCode, set only when the whole trade failed with one shared cause. Deposit: a Steam job error key."
                         },
                         "readyAt": {
                           "type": "string",
@@ -11926,6 +12102,18 @@
                                 ],
                                 "description": "Per-item status (withdrawals only)"
                               },
+                              "error": {
+                                "type": "string",
+                                "enum": [
+                                  "LISTING_UNAVAILABLE",
+                                  "PRICE_CHANGED",
+                                  "TRADE_URL_INVALID",
+                                  "STEAM_ACCOUNT_RESTRICTED",
+                                  "MARKET_UNAVAILABLE",
+                                  "PURCHASE_FAILED"
+                                ],
+                                "description": "Failure code for a failed withdraw item (withdrawals only)"
+                              },
                               "marketPrice": {
                                 "type": "number",
                                 "description": "BUFF163 market price in USD"
@@ -12162,7 +12350,8 @@
                           ]
                         },
                         "error": {
-                          "type": "string"
+                          "type": "string",
+                          "description": "Trade-level failure reason. Withdraw: a TradeFailureCode, set only when the whole trade failed with one shared cause. Deposit: a Steam job error key."
                         },
                         "readyAt": {
                           "type": "string",

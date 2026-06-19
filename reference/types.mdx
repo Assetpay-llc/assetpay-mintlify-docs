@@ -51,7 +51,8 @@ interface Trade {
 
   // Status-specific
   revertedBy?: RevertedBy;       // Who reversed the trade (status === "reverted")
-  error?: string;                // Error message (status === "failed")
+  error?: string;                // Failure reason. Withdrawals: a TradeFailureCode, set only when the
+                                 //   whole trade failed with one shared cause. Deposits: a Steam error key.
 
   // Bot details
   botInfo?: {
@@ -116,6 +117,7 @@ interface Item {
 
   // Withdrawal-specific (only set on items belonging to a withdraw trade)
   status?: TradeStatus;          // Per-item purchase status, mirrors Trade.status
+  error?: TradeFailureCode;      // Failure code — present only on failed withdraw items
 }
 ```
 
@@ -207,8 +209,8 @@ type TradeStatus =
   | 'hold'        // User accepted; Steam hold window running (carries offerID + holdEndDate)
   | 'completed'   // Trade finished successfully
   | 'failed'      // Trade failed at some point
-  | 'canceled'    // Trade was canceled before completion
-  | 'declined'    // (Deposits only) User declined the Steam trade offer
+  | 'canceled'    // Trade was canceled before completion (no penalty)
+  | 'declined'    // End user declined / let the Steam offer expire (deposits and withdrawals)
   | 'reverted';   // Previously completed trade was reversed (see revertedBy)
 ```
 
@@ -248,6 +250,20 @@ type DeliveryMode =
 type RevertedBy =
   | 'supplier'   // Marketplace supplier reversed (withdrawals only)
   | 'user';      // End user reversed
+```
+
+### TradeFailureCode
+
+Set on `Item.error` for **failed withdraw items**, and on the trade-level `error` only when an entire withdraw failed for one shared reason (mixed/partial failures leave `Trade.error` null — read the per-item codes). A small, stable set; `canceled` and `declined` items carry **no** code, since the status itself is the reason.
+
+```typescript
+type TradeFailureCode =
+  | 'LISTING_UNAVAILABLE'      // Listing sold / delisted / out of stock — retry another listing
+  | 'PRICE_CHANGED'            // Price moved above your ceiling — re-quote
+  | 'TRADE_URL_INVALID'        // Recipient's Steam trade URL is invalid or escrow-blocked
+  | 'STEAM_ACCOUNT_RESTRICTED' // Recipient's Steam account can't receive (VAC / ban / hold / private)
+  | 'MARKET_UNAVAILABLE'       // Temporary upstream or our-side issue — retry later
+  | 'PURCHASE_FAILED';         // Unclassified failure (catch-all)
 ```
 
 ### GameId

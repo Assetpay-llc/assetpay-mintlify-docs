@@ -117,6 +117,21 @@ Returned by deposit, withdrawal, inventory, and market endpoints.
 | 31 | `STEAM_UNAVAILABLE` | 424 | Steam temporarily couldn't serve the request; retry shortly |
 | 33 | `STEAM_RATE_LIMITED` | 424 | Steam is rate-limiting inventory requests; retry shortly |
 
+## Asynchronous Trade Failure Codes
+
+The errors above are returned **synchronously** when a call is rejected. A withdrawal that was accepted but later fails carries a separate, smaller, stable code instead — on `Item.error` (and on `Trade.error` when the whole trade failed for one shared cause), typed as [`TradeFailureCode`](/reference/types#tradefailurecode). These are **not** numeric API error codes; they appear on the trade object and in callbacks.
+
+| `error` | Meaning |
+|---------|---------|
+| `LISTING_UNAVAILABLE` | Listing sold / delisted / out of stock |
+| `PRICE_CHANGED` | Price moved above your ceiling |
+| `TRADE_URL_INVALID` | Recipient's Steam trade URL is invalid or escrow-blocked |
+| `STEAM_ACCOUNT_RESTRICTED` | Recipient's Steam account can't receive (VAC / ban / hold / private) |
+| `MARKET_UNAVAILABLE` | Temporary upstream / our-side issue — retry later |
+| `PURCHASE_FAILED` | Unclassified failure (catch-all) |
+
+`canceled` and `declined` items carry no code — the status is the reason. See [Withdrawals → Per-Item Failure Reasons](/guides/withdrawals#per-item-failure-reasons) for handling guidance.
+
 ## Wallet / Funding Errors
 
 Mostly returned by crypto wallet endpoints, but several apply to trading flows too.

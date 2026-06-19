@@ -157,6 +157,8 @@ A withdrawal progresses `initiated → pending → active → hold → completed
 
 **Rust withdrawals normally skip `hold`.** Rust items have no 7-day reversal window, so a Rust withdrawal usually goes `active → completed` directly with no `holdEndDate` (the exception is a Steam security escrow, which surfaces as `hold`). CS2 withdrawals always pass through `hold`.
 
+**Price true-up on completion.** If the supplier fills below the price you locked, AssetPay settles the actual cost and **refunds the difference** (including the fee on it) to your merchant wallet; `totalPrice` is trued up to the actual spend. You never pay more than your locked price. This applies to both standard and quick withdrawals.
+
 ### Trade Reversals
 
 In rare cases, a completed withdrawal can be reversed. This happens when either the supplier or the user cancels the Steam trade after acceptance. The trade object includes a `revertedBy` field:

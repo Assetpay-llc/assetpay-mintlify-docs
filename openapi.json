@@ -6706,8 +6706,8 @@
     },
     "/secure/trades/{tradeId}": {
       "get": {
-        "summary": "Get a single merchant self-trade",
-        "description": "Returns the full record (status, items, collateral, bot info, error) for one trade. `tradeId` accepts either the internal trade id or the `externalId` you supplied at creation. Scoped to trades the calling merchant initiated via /secure/*.",
+        "summary": "Get merchant self-trade(s) by id or externalId",
+        "description": "Returns the full record (status, items, collateral, bot info, error) for a trade. `tradeId` accepts either the internal trade id or the `externalId` you supplied at creation. Comma-separate up to 100 ids/externalIds (id1,id2,id3) to fetch several in one call — useful for polling multiple pending withdrawals. With one ref the response is a single trade (404 if not found); with multiple it is an array of the trades that resolved (refs that don't match are simply omitted, no 404). Scoped to trades the calling merchant initiated via /secure/*.",
         "tags": [
           "Trading"
         ],
@@ -6721,17 +6721,17 @@
             "schema": {
               "type": "string",
               "minLength": 1,
-              "description": "Internal trade id or the externalId you supplied when creating the trade."
+              "description": "Internal trade id or your externalId. Comma-separate up to 100 (id1,id2,id3) to fetch multiple — the response is then an array."
             },
             "required": true,
-            "description": "Internal trade id or the externalId you supplied when creating the trade.",
+            "description": "Internal trade id or your externalId. Comma-separate up to 100 (id1,id2,id3) to fetch multiple — the response is then an array.",
             "name": "tradeId",
             "in": "path"
           }
         ],
         "responses": {
           "200": {
-            "description": "Trade record",
+            "description": "A single trade (one ref) or an array of trades (comma-separated refs)",
             "content": {
               "application/json": {
                 "schema": {
@@ -6748,67 +6748,398 @@
                       ]
                     },
                     "data": {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string"
-                        },
-                        "type": {
-                          "type": "string",
-                          "enum": [
-                            "deposit",
-                            "withdraw"
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "deposit",
+                                "withdraw"
+                              ]
+                            },
+                            "source": {
+                              "type": "string",
+                              "enum": [
+                                "client",
+                                "self"
+                              ],
+                              "description": "Trade origin: \"client\" (end-user flow) or \"self\" (merchant self-trade)"
+                            },
+                            "externalId": {
+                              "type": "string"
+                            },
+                            "externalClientUserId": {
+                              "type": "string"
+                            },
+                            "merchantId": {
+                              "type": "string"
+                            },
+                            "clientUserId": {
+                              "type": "string"
+                            },
+                            "clientTradeUrl": {
+                              "type": "string"
+                            },
+                            "clientSteamID": {
+                              "type": "string"
+                            },
+                            "offerID": {
+                              "type": "string",
+                              "description": "Steam trade offer id. Present once the offer is sent."
+                            },
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "initiated",
+                                "pending",
+                                "active",
+                                "hold",
+                                "completed",
+                                "failed",
+                                "canceled",
+                                "declined",
+                                "reverted"
+                              ],
+                              "description": "Trade status. In-flight: initiated, pending, active, hold. Terminal: completed, failed, canceled, declined, reverted. Deposit flow: initiated → active → hold → completed. Withdraw flow: initiated → pending → active → hold → completed."
+                            },
+                            "game": {
+                              "type": "string"
+                            },
+                            "items": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "assetId": {
+                                    "type": "string",
+                                    "description": "Raw Steam assetid. Always present on inventory listings and deposit trade items. Omitted on withdraw items until the item lands in the recipient's Steam inventory."
+                                  },
+                                  "appid": {
+                                    "type": "integer"
+                                  },
+                                  "name": {
+                                    "type": "string",
+                                    "description": "Omitted on bare withdraw items where AssetPay has no Steam-side metadata yet"
+                                  },
+                                  "marketHashName": {
+                                    "type": "string"
+                                  },
+                                  "type": {
+                                    "type": "string"
+                                  },
+                                  "iconUrl": {
+                                    "type": "string"
+                                  },
+                                  "tradable": {
+                                    "type": "boolean"
+                                  },
+                                  "amount": {
+                                    "type": "number"
+                                  },
+                                  "status": {
+                                    "type": "string",
+                                    "enum": [
+                                      "initiated",
+                                      "pending",
+                                      "active",
+                                      "hold",
+                                      "completed",
+                                      "failed",
+                                      "canceled",
+                                      "declined",
+                                      "reverted"
+                                    ],
+                                    "description": "Per-item status (withdrawals only)"
+                                  },
+                                  "error": {
+                                    "type": "string",
+                                    "enum": [
+                                      "LISTING_UNAVAILABLE",
+                                      "PRICE_CHANGED",
+                                      "TRADE_URL_INVALID",
+                                      "STEAM_ACCOUNT_RESTRICTED",
+                                      "MARKET_UNAVAILABLE",
+                                      "PURCHASE_FAILED"
+                                    ],
+                                    "description": "Failure code for a failed withdraw item (withdrawals only)"
+                                  },
+                                  "marketPrice": {
+                                    "type": "number",
+                                    "description": "BUFF163 market price in USD"
+                                  },
+                                  "offer": {
+                                    "type": "object",
+                                    "properties": {
+                                      "price": {
+                                        "type": "number",
+                                        "description": "Offer price in USD"
+                                      },
+                                      "reference": {
+                                        "type": "string",
+                                        "description": "Marketplace product reference. On a market listing this is the parent itemId you queried `/market/item` with (hex, e.g. \"0010f8d48278ccb8\"); the listing-specific id is the `id` field above."
+                                      },
+                                      "delivery": {
+                                        "type": "string",
+                                        "enum": [
+                                          "standard",
+                                          "instant"
+                                        ],
+                                        "description": "Skinshark delivery mode"
+                                      },
+                                      "maxAmount": {
+                                        "type": "number"
+                                      },
+                                      "accepted": {
+                                        "type": "boolean"
+                                      }
+                                    },
+                                    "required": [
+                                      "price"
+                                    ]
+                                  },
+                                  "exterior": {
+                                    "type": "string"
+                                  },
+                                  "rarity": {
+                                    "type": "string"
+                                  },
+                                  "color": {
+                                    "type": "string"
+                                  },
+                                  "wear": {
+                                    "type": "string"
+                                  },
+                                  "paintSeed": {
+                                    "type": "integer"
+                                  },
+                                  "previewToken": {
+                                    "type": "string",
+                                    "description": "Steam inspect/preview token for rendering the item's in-game preview. Present on inventory and autoseller-pool (self-owned) items; absent on third-party Skinshark listings."
+                                  },
+                                  "doppler": {
+                                    "type": "object",
+                                    "properties": {
+                                      "status": {
+                                        "type": "integer"
+                                      },
+                                      "name": {
+                                        "type": "string"
+                                      },
+                                      "paintIndex": {
+                                        "type": "integer"
+                                      }
+                                    },
+                                    "required": [
+                                      "name"
+                                    ]
+                                  },
+                                  "fade": {
+                                    "type": "object",
+                                    "properties": {
+                                      "percentage": {
+                                        "type": "number"
+                                      }
+                                    },
+                                    "required": [
+                                      "percentage"
+                                    ]
+                                  },
+                                  "hardened": {
+                                    "type": "object",
+                                    "properties": {
+                                      "status": {
+                                        "type": "integer"
+                                      },
+                                      "name": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "status",
+                                      "name"
+                                    ]
+                                  },
+                                  "stickers": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "name": {
+                                          "type": "string"
+                                        },
+                                        "marketHashName": {
+                                          "type": "string"
+                                        },
+                                        "slot": {
+                                          "type": "integer"
+                                        },
+                                        "wear": {
+                                          "type": "number"
+                                        },
+                                        "iconUrl": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "name",
+                                        "slot",
+                                        "iconUrl"
+                                      ]
+                                    }
+                                  },
+                                  "charm": {
+                                    "type": "object",
+                                    "properties": {
+                                      "name": {
+                                        "type": "string"
+                                      },
+                                      "marketHashName": {
+                                        "type": "string"
+                                      },
+                                      "iconUrl": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "name",
+                                      "iconUrl"
+                                    ]
+                                  },
+                                  "botInfo": {
+                                    "type": "object",
+                                    "properties": {
+                                      "name": {
+                                        "type": "string"
+                                      },
+                                      "avatar": {
+                                        "type": "string"
+                                      },
+                                      "joined": {
+                                        "type": "string",
+                                        "format": "date-time"
+                                      },
+                                      "steamId": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "name"
+                                    ],
+                                    "description": "Holding bot identity. Present on autoseller-pool marketplace items."
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "appid",
+                                  "tradable"
+                                ]
+                              }
+                            },
+                            "totalPrice": {
+                              "type": "number",
+                              "description": "Total price in USD"
+                            },
+                            "preCredit": {
+                              "type": "number",
+                              "description": "Instant credit amount in USD"
+                            },
+                            "pendingCredit": {
+                              "type": "number",
+                              "description": "Amount held for hold period in USD"
+                            },
+                            "isInstant": {
+                              "type": "boolean",
+                              "description": "Whether instant crediting was requested"
+                            },
+                            "collateral": {
+                              "type": "object",
+                              "properties": {
+                                "merchant": {
+                                  "type": "number"
+                                },
+                                "provider": {
+                                  "type": "number"
+                                }
+                              },
+                              "required": [
+                                "merchant",
+                                "provider"
+                              ]
+                            },
+                            "holdEndDate": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "revertedBy": {
+                              "type": "string",
+                              "enum": [
+                                "supplier",
+                                "user"
+                              ]
+                            },
+                            "botInfo": {
+                              "type": "object",
+                              "properties": {
+                                "name": {
+                                  "type": "string"
+                                },
+                                "avatar": {
+                                  "type": "string"
+                                },
+                                "joined": {
+                                  "type": "string",
+                                  "format": "date-time"
+                                },
+                                "steamId": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "name"
+                              ]
+                            },
+                            "error": {
+                              "type": "string",
+                              "description": "Trade-level failure reason. Withdraw: a TradeFailureCode, set only when the whole trade failed with one shared cause. Deposit: a Steam job error key."
+                            },
+                            "readyAt": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "createdAt": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "updatedAt": {
+                              "type": "string",
+                              "format": "date-time"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "type",
+                            "source",
+                            "merchantId",
+                            "clientUserId",
+                            "clientTradeUrl",
+                            "clientSteamID",
+                            "status",
+                            "game",
+                            "items",
+                            "totalPrice",
+                            "createdAt",
+                            "updatedAt"
                           ]
                         },
-                        "source": {
-                          "type": "string",
-                          "enum": [
-                            "client",
-                            "self"
-                          ],
-                          "description": "Trade origin: \"client\" (end-user flow) or \"self\" (merchant self-trade)"
-                        },
-                        "externalId": {
-                          "type": "string"
-                        },
-                        "externalClientUserId": {
-                          "type": "string"
-                        },
-                        "merchantId": {
-                          "type": "string"
-                        },
-                        "clientUserId": {
-                          "type": "string"
-                        },
-                        "clientTradeUrl": {
-                          "type": "string"
-                        },
-                        "clientSteamID": {
-                          "type": "string"
-                        },
-                        "offerID": {
-                          "type": "string",
-                          "description": "Steam trade offer id. Present once the offer is sent."
-                        },
-                        "status": {
-                          "type": "string",
-                          "enum": [
-                            "initiated",
-                            "pending",
-                            "active",
-                            "hold",
-                            "completed",
-                            "failed",
-                            "canceled",
-                            "declined",
-                            "reverted"
-                          ],
-                          "description": "Trade status. In-flight: initiated, pending, active, hold. Terminal: completed, failed, canceled, declined, reverted. Deposit flow: initiated → active → hold → completed. Withdraw flow: initiated → pending → active → hold → completed."
-                        },
-                        "game": {
-                          "type": "string"
-                        },
-                        "items": {
+                        {
                           "type": "array",
                           "items": {
                             "type": "object",
@@ -6816,31 +7147,42 @@
                               "id": {
                                 "type": "string"
                               },
-                              "assetId": {
-                                "type": "string",
-                                "description": "Raw Steam assetid. Always present on inventory listings and deposit trade items. Omitted on withdraw items until the item lands in the recipient's Steam inventory."
-                              },
-                              "appid": {
-                                "type": "integer"
-                              },
-                              "name": {
-                                "type": "string",
-                                "description": "Omitted on bare withdraw items where AssetPay has no Steam-side metadata yet"
-                              },
-                              "marketHashName": {
-                                "type": "string"
-                              },
                               "type": {
+                                "type": "string",
+                                "enum": [
+                                  "deposit",
+                                  "withdraw"
+                                ]
+                              },
+                              "source": {
+                                "type": "string",
+                                "enum": [
+                                  "client",
+                                  "self"
+                                ],
+                                "description": "Trade origin: \"client\" (end-user flow) or \"self\" (merchant self-trade)"
+                              },
+                              "externalId": {
                                 "type": "string"
                               },
-                              "iconUrl": {
+                              "externalClientUserId": {
                                 "type": "string"
                               },
-                              "tradable": {
-                                "type": "boolean"
+                              "merchantId": {
+                                "type": "string"
                               },
-                              "amount": {
-                                "type": "number"
+                              "clientUserId": {
+                                "type": "string"
+                              },
+                              "clientTradeUrl": {
+                                "type": "string"
+                              },
+                              "clientSteamID": {
+                                "type": "string"
+                              },
+                              "offerID": {
+                                "type": "string",
+                                "description": "Steam trade offer id. Present once the offer is sent."
                               },
                               "status": {
                                 "type": "string",
@@ -6855,160 +7197,284 @@
                                   "declined",
                                   "reverted"
                                 ],
-                                "description": "Per-item status (withdrawals only)"
+                                "description": "Trade status. In-flight: initiated, pending, active, hold. Terminal: completed, failed, canceled, declined, reverted. Deposit flow: initiated → active → hold → completed. Withdraw flow: initiated → pending → active → hold → completed."
                               },
-                              "error": {
-                                "type": "string",
-                                "enum": [
-                                  "LISTING_UNAVAILABLE",
-                                  "PRICE_CHANGED",
-                                  "TRADE_URL_INVALID",
-                                  "STEAM_ACCOUNT_RESTRICTED",
-                                  "MARKET_UNAVAILABLE",
-                                  "PURCHASE_FAILED"
-                                ],
-                                "description": "Failure code for a failed withdraw item (withdrawals only)"
-                              },
-                              "marketPrice": {
-                                "type": "number",
-                                "description": "BUFF163 market price in USD"
-                              },
-                              "offer": {
-                                "type": "object",
-                                "properties": {
-                                  "price": {
-                                    "type": "number",
-                                    "description": "Offer price in USD"
-                                  },
-                                  "reference": {
-                                    "type": "string",
-                                    "description": "Marketplace product reference. On a market listing this is the parent itemId you queried `/market/item` with (hex, e.g. \"0010f8d48278ccb8\"); the listing-specific id is the `id` field above."
-                                  },
-                                  "delivery": {
-                                    "type": "string",
-                                    "enum": [
-                                      "standard",
-                                      "instant"
-                                    ],
-                                    "description": "Skinshark delivery mode"
-                                  },
-                                  "maxAmount": {
-                                    "type": "number"
-                                  },
-                                  "accepted": {
-                                    "type": "boolean"
-                                  }
-                                },
-                                "required": [
-                                  "price"
-                                ]
-                              },
-                              "exterior": {
+                              "game": {
                                 "type": "string"
                               },
-                              "rarity": {
-                                "type": "string"
-                              },
-                              "color": {
-                                "type": "string"
-                              },
-                              "wear": {
-                                "type": "string"
-                              },
-                              "paintSeed": {
-                                "type": "integer"
-                              },
-                              "previewToken": {
-                                "type": "string",
-                                "description": "Steam inspect/preview token for rendering the item's in-game preview. Present on inventory and autoseller-pool (self-owned) items; absent on third-party Skinshark listings."
-                              },
-                              "doppler": {
-                                "type": "object",
-                                "properties": {
-                                  "status": {
-                                    "type": "integer"
-                                  },
-                                  "name": {
-                                    "type": "string"
-                                  },
-                                  "paintIndex": {
-                                    "type": "integer"
-                                  }
-                                },
-                                "required": [
-                                  "name"
-                                ]
-                              },
-                              "fade": {
-                                "type": "object",
-                                "properties": {
-                                  "percentage": {
-                                    "type": "number"
-                                  }
-                                },
-                                "required": [
-                                  "percentage"
-                                ]
-                              },
-                              "hardened": {
-                                "type": "object",
-                                "properties": {
-                                  "status": {
-                                    "type": "integer"
-                                  },
-                                  "name": {
-                                    "type": "string"
-                                  }
-                                },
-                                "required": [
-                                  "status",
-                                  "name"
-                                ]
-                              },
-                              "stickers": {
+                              "items": {
                                 "type": "array",
                                 "items": {
                                   "type": "object",
                                   "properties": {
-                                    "name": {
+                                    "id": {
                                       "type": "string"
+                                    },
+                                    "assetId": {
+                                      "type": "string",
+                                      "description": "Raw Steam assetid. Always present on inventory listings and deposit trade items. Omitted on withdraw items until the item lands in the recipient's Steam inventory."
+                                    },
+                                    "appid": {
+                                      "type": "integer"
+                                    },
+                                    "name": {
+                                      "type": "string",
+                                      "description": "Omitted on bare withdraw items where AssetPay has no Steam-side metadata yet"
                                     },
                                     "marketHashName": {
                                       "type": "string"
                                     },
-                                    "slot": {
-                                      "type": "integer"
-                                    },
-                                    "wear": {
-                                      "type": "number"
+                                    "type": {
+                                      "type": "string"
                                     },
                                     "iconUrl": {
                                       "type": "string"
+                                    },
+                                    "tradable": {
+                                      "type": "boolean"
+                                    },
+                                    "amount": {
+                                      "type": "number"
+                                    },
+                                    "status": {
+                                      "type": "string",
+                                      "enum": [
+                                        "initiated",
+                                        "pending",
+                                        "active",
+                                        "hold",
+                                        "completed",
+                                        "failed",
+                                        "canceled",
+                                        "declined",
+                                        "reverted"
+                                      ],
+                                      "description": "Per-item status (withdrawals only)"
+                                    },
+                                    "error": {
+                                      "type": "string",
+                                      "enum": [
+                                        "LISTING_UNAVAILABLE",
+                                        "PRICE_CHANGED",
+                                        "TRADE_URL_INVALID",
+                                        "STEAM_ACCOUNT_RESTRICTED",
+                                        "MARKET_UNAVAILABLE",
+                                        "PURCHASE_FAILED"
+                                      ],
+                                      "description": "Failure code for a failed withdraw item (withdrawals only)"
+                                    },
+                                    "marketPrice": {
+                                      "type": "number",
+                                      "description": "BUFF163 market price in USD"
+                                    },
+                                    "offer": {
+                                      "type": "object",
+                                      "properties": {
+                                        "price": {
+                                          "type": "number",
+                                          "description": "Offer price in USD"
+                                        },
+                                        "reference": {
+                                          "type": "string",
+                                          "description": "Marketplace product reference. On a market listing this is the parent itemId you queried `/market/item` with (hex, e.g. \"0010f8d48278ccb8\"); the listing-specific id is the `id` field above."
+                                        },
+                                        "delivery": {
+                                          "type": "string",
+                                          "enum": [
+                                            "standard",
+                                            "instant"
+                                          ],
+                                          "description": "Skinshark delivery mode"
+                                        },
+                                        "maxAmount": {
+                                          "type": "number"
+                                        },
+                                        "accepted": {
+                                          "type": "boolean"
+                                        }
+                                      },
+                                      "required": [
+                                        "price"
+                                      ]
+                                    },
+                                    "exterior": {
+                                      "type": "string"
+                                    },
+                                    "rarity": {
+                                      "type": "string"
+                                    },
+                                    "color": {
+                                      "type": "string"
+                                    },
+                                    "wear": {
+                                      "type": "string"
+                                    },
+                                    "paintSeed": {
+                                      "type": "integer"
+                                    },
+                                    "previewToken": {
+                                      "type": "string",
+                                      "description": "Steam inspect/preview token for rendering the item's in-game preview. Present on inventory and autoseller-pool (self-owned) items; absent on third-party Skinshark listings."
+                                    },
+                                    "doppler": {
+                                      "type": "object",
+                                      "properties": {
+                                        "status": {
+                                          "type": "integer"
+                                        },
+                                        "name": {
+                                          "type": "string"
+                                        },
+                                        "paintIndex": {
+                                          "type": "integer"
+                                        }
+                                      },
+                                      "required": [
+                                        "name"
+                                      ]
+                                    },
+                                    "fade": {
+                                      "type": "object",
+                                      "properties": {
+                                        "percentage": {
+                                          "type": "number"
+                                        }
+                                      },
+                                      "required": [
+                                        "percentage"
+                                      ]
+                                    },
+                                    "hardened": {
+                                      "type": "object",
+                                      "properties": {
+                                        "status": {
+                                          "type": "integer"
+                                        },
+                                        "name": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "status",
+                                        "name"
+                                      ]
+                                    },
+                                    "stickers": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "name": {
+                                            "type": "string"
+                                          },
+                                          "marketHashName": {
+                                            "type": "string"
+                                          },
+                                          "slot": {
+                                            "type": "integer"
+                                          },
+                                          "wear": {
+                                            "type": "number"
+                                          },
+                                          "iconUrl": {
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "name",
+                                          "slot",
+                                          "iconUrl"
+                                        ]
+                                      }
+                                    },
+                                    "charm": {
+                                      "type": "object",
+                                      "properties": {
+                                        "name": {
+                                          "type": "string"
+                                        },
+                                        "marketHashName": {
+                                          "type": "string"
+                                        },
+                                        "iconUrl": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "name",
+                                        "iconUrl"
+                                      ]
+                                    },
+                                    "botInfo": {
+                                      "type": "object",
+                                      "properties": {
+                                        "name": {
+                                          "type": "string"
+                                        },
+                                        "avatar": {
+                                          "type": "string"
+                                        },
+                                        "joined": {
+                                          "type": "string",
+                                          "format": "date-time"
+                                        },
+                                        "steamId": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "name"
+                                      ],
+                                      "description": "Holding bot identity. Present on autoseller-pool marketplace items."
                                     }
                                   },
                                   "required": [
-                                    "name",
-                                    "slot",
-                                    "iconUrl"
+                                    "id",
+                                    "appid",
+                                    "tradable"
                                   ]
                                 }
                               },
-                              "charm": {
+                              "totalPrice": {
+                                "type": "number",
+                                "description": "Total price in USD"
+                              },
+                              "preCredit": {
+                                "type": "number",
+                                "description": "Instant credit amount in USD"
+                              },
+                              "pendingCredit": {
+                                "type": "number",
+                                "description": "Amount held for hold period in USD"
+                              },
+                              "isInstant": {
+                                "type": "boolean",
+                                "description": "Whether instant crediting was requested"
+                              },
+                              "collateral": {
                                 "type": "object",
                                 "properties": {
-                                  "name": {
-                                    "type": "string"
+                                  "merchant": {
+                                    "type": "number"
                                   },
-                                  "marketHashName": {
-                                    "type": "string"
-                                  },
-                                  "iconUrl": {
-                                    "type": "string"
+                                  "provider": {
+                                    "type": "number"
                                   }
                                 },
                                 "required": [
-                                  "name",
-                                  "iconUrl"
+                                  "merchant",
+                                  "provider"
+                                ]
+                              },
+                              "holdEndDate": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "revertedBy": {
+                                "type": "string",
+                                "enum": [
+                                  "supplier",
+                                  "user"
                                 ]
                               },
                               "botInfo": {
@@ -7030,111 +7496,42 @@
                                 },
                                 "required": [
                                   "name"
-                                ],
-                                "description": "Holding bot identity. Present on autoseller-pool marketplace items."
+                                ]
+                              },
+                              "error": {
+                                "type": "string",
+                                "description": "Trade-level failure reason. Withdraw: a TradeFailureCode, set only when the whole trade failed with one shared cause. Deposit: a Steam job error key."
+                              },
+                              "readyAt": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "createdAt": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "updatedAt": {
+                                "type": "string",
+                                "format": "date-time"
                               }
                             },
                             "required": [
                               "id",
-                              "appid",
-                              "tradable"
+                              "type",
+                              "source",
+                              "merchantId",
+                              "clientUserId",
+                              "clientTradeUrl",
+                              "clientSteamID",
+                              "status",
+                              "game",
+                              "items",
+                              "totalPrice",
+                              "createdAt",
+                              "updatedAt"
                             ]
                           }
-                        },
-                        "totalPrice": {
-                          "type": "number",
-                          "description": "Total price in USD"
-                        },
-                        "preCredit": {
-                          "type": "number",
-                          "description": "Instant credit amount in USD"
-                        },
-                        "pendingCredit": {
-                          "type": "number",
-                          "description": "Amount held for hold period in USD"
-                        },
-                        "isInstant": {
-                          "type": "boolean",
-                          "description": "Whether instant crediting was requested"
-                        },
-                        "collateral": {
-                          "type": "object",
-                          "properties": {
-                            "merchant": {
-                              "type": "number"
-                            },
-                            "provider": {
-                              "type": "number"
-                            }
-                          },
-                          "required": [
-                            "merchant",
-                            "provider"
-                          ]
-                        },
-                        "holdEndDate": {
-                          "type": "string",
-                          "format": "date-time"
-                        },
-                        "revertedBy": {
-                          "type": "string",
-                          "enum": [
-                            "supplier",
-                            "user"
-                          ]
-                        },
-                        "botInfo": {
-                          "type": "object",
-                          "properties": {
-                            "name": {
-                              "type": "string"
-                            },
-                            "avatar": {
-                              "type": "string"
-                            },
-                            "joined": {
-                              "type": "string",
-                              "format": "date-time"
-                            },
-                            "steamId": {
-                              "type": "string"
-                            }
-                          },
-                          "required": [
-                            "name"
-                          ]
-                        },
-                        "error": {
-                          "type": "string",
-                          "description": "Trade-level failure reason. Withdraw: a TradeFailureCode, set only when the whole trade failed with one shared cause. Deposit: a Steam job error key."
-                        },
-                        "readyAt": {
-                          "type": "string",
-                          "format": "date-time"
-                        },
-                        "createdAt": {
-                          "type": "string",
-                          "format": "date-time"
-                        },
-                        "updatedAt": {
-                          "type": "string",
-                          "format": "date-time"
                         }
-                      },
-                      "required": [
-                        "id",
-                        "type",
-                        "source",
-                        "merchantId",
-                        "clientUserId",
-                        "clientTradeUrl",
-                        "clientSteamID",
-                        "status",
-                        "game",
-                        "items",
-                        "totalPrice",
-                        "createdAt",
-                        "updatedAt"
                       ]
                     }
                   },

@@ -31,13 +31,16 @@ Authorization: CLIENT_TOKEN
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `itemId` | string | Yes | Catalog item id (the `id` from `/client/market/suggestions` or `itemId` from `/secure/prices`). 5–256 chars. |
+| `itemId` | string | Yes\* | Catalog item id (the `id` from `/client/market/suggestions` or `itemId` from `/secure/prices`). 5–256 chars. Provide this **or** `marketHashName`; `itemId` wins when both are sent. |
+| `marketHashName` | string | Yes\* | Exact market hash name (e.g. `AK-47 \| Redline (Field-Tested)`), resolved to the catalog item id. Ignored when `itemId` is supplied. |
 | `maxPrice` | number | Yes | **Gross** per-unit price ceiling in USD (fee-inclusive — the same basis as the `withdraw` price in `/secure/prices`). Max \$100,000. AssetPay backs its fee out of this to get the sourcing ceiling sent to the marketplace. |
 | `amount` | number | Yes | How many units to buy. Integer, 1–200. |
 | `delivery` | string | No | `"standard"` or `"instant"`. Defaults to `"standard"`. |
 | `phase` | string | No | Doppler phase to buy: `"Phase 1"`–`"Phase 4"`, `"Ruby"`, `"Sapphire"`, `"Black Pearl"`, `"Emerald"`. Prices against that phase's floor. **Cannot be combined with `delivery: "instant"`** (rejected with `VALIDATION_FAILED`). |
 | `game` | string | No | Must be `"730"` (CS2). Defaults to `"730"`. |
 | `externalId` | string | No | Your unique tracking ID (max 128 chars). Must be unique per trade. |
+
+\* Provide either `itemId` or `marketHashName`.
 
 ## Response
 

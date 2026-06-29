@@ -84,12 +84,18 @@ Authorization: CLIENT_TOKEN
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `itemId` | string | Required | The marketplace item ID returned by `/client/market` |
+| `itemId` | string | Required\* | The marketplace item ID returned by `/client/market` or `/client/market/suggestions` |
+| `marketHashName` | string | Required\* | Exact market hash name, resolved to the catalog item id. Use instead of `itemId`; `itemId` wins when both are sent |
 | `delivery` | string | `any` | `"any"`, `"standard"`, or `"instant"` — filters listings by delivery mode |
+| `phase` | string | - | Doppler phase (`"Ruby"`, `"Phase 1"`, etc.) — returns only that phase's listings; combinable with `delivery` |
+| `floatMin` | number | - | Lower bound on the item float/wear value (`0`–`1`) |
+| `floatMax` | number | - | Upper bound on the item float/wear value (`0`–`1`) |
 | `page` | number | `1` | Page number |
 | `perPage` | number | `50` | Listings per page (max `100`) |
 
-This returns individual listings with different float values, stickers, and prices for the same item type. Useful when you want to let users pick a specific skin rather than just the cheapest one.
+\* Provide either `itemId` or `marketHashName`.
+
+This returns individual listings with different float values, stickers, and prices for the same item type. Useful when you want to let users pick a specific skin rather than just the cheapest one. Use `phase` and the `floatMin`/`floatMax` range to narrow to a specific Doppler phase or wear band.
 
 ## Pricing in Market Items
 

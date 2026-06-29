@@ -170,7 +170,7 @@ When a withdrawal is reverted, your merchant wallet is automatically refunded by
 
 ## Quick Withdrawals
 
-If you don't want to pick specific listings, use **quick withdrawal**: pass a catalog `itemId`, a per-unit price ceiling, and an amount, and AssetPay buys the cheapest available listings at or below your ceiling. **CS2 only.**
+If you don't want to pick specific listings, use **quick withdrawal**: pass a catalog `itemId` (or its exact `marketHashName` instead), a per-unit price ceiling, and an amount, and AssetPay buys the cheapest available listings at or below your ceiling. **CS2 only.**
 
 ```http
 POST https://api.assetpay.gg/client/trading/withdraw/quick

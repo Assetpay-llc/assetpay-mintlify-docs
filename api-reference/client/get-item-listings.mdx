@@ -20,10 +20,16 @@ Authorization: CLIENT_TOKEN
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `itemId` | string | Required | Marketplace item ID. For CS2 listings, this is the Assetpay item identifier returned by `/client/market`. |
+| `itemId` | string | Required\* | Marketplace item ID. For CS2 listings, this is the Assetpay item identifier returned by `/client/market` or `/client/market/suggestions`. Provide this **or** `marketHashName`; `itemId` wins when both are sent. |
+| `marketHashName` | string | Required\* | Exact market hash name (e.g. `AK-47 \| Redline (Field-Tested)`), resolved to the catalog item id. Ignored when `itemId` is supplied. |
 | `delivery` | string | `any` | `"any"`, `"standard"` (bot sources from supplier and sends trade offer) or `"instant"` (immediate delivery from pre-positioned stock). Filters listings by delivery mode. |
+| `phase` | string | - | Doppler phase: `"Phase 1"`–`"Phase 4"`, `"Ruby"`, `"Sapphire"`, `"Black Pearl"`, `"Emerald"`. Returns only that phase's listings. Combinable with `delivery`. |
+| `floatMin` | number | - | Lower bound on the item float/wear value (`0`–`1`). |
+| `floatMax` | number | - | Upper bound on the item float/wear value (`0`–`1`). |
 | `page` | number | `1` | Page number |
 | `perPage` | number | `50` | Listings per page (max 100) |
+
+\* Provide either `itemId` or `marketHashName`.
 
 ## Response
 

@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "AssetPay Public API",
-    "version": "0.6.0",
+    "version": "0.7.1",
     "description": "Public trading API - skin deposits, withdrawals, pricing, client endpoints, and identity verification."
   },
   "servers": [
@@ -3564,7 +3564,7 @@
     "/secure/buy/quick": {
       "post": {
         "summary": "Quick-buy skins from the marketplace (merchant self-trade)",
-        "description": "Buys the N cheapest listings of a single item at or below a per-unit ceiling. CS2 only. `itemId` and the gross per-unit `maxPrice` (fee-inclusive) come from /secure/prices; `amount` is 1-200 and `delivery` is standard or instant. Optionally pin a Doppler `phase` (e.g. 'Ruby') to buy only that phase, priced against the phase floor (not combinable with instant delivery). The trade starts empty and locks the worst-case total; the filled listings (possibly fewer than requested) and the refund of any unfilled / below-ceiling remainder settle asynchronously via the trade webhook.",
+        "description": "Buys the N cheapest listings of a single item at or below a per-unit ceiling. CS2 only. Identify the item with either `itemId` or its exact `marketHashName` (itemId wins when both are sent); the per-unit `maxPrice` (fee-inclusive, gross) and `itemId` come from /secure/prices. `amount` is 1-200 and `delivery` is standard or instant. Optionally pin a Doppler `phase` (e.g. 'Ruby') to buy only that phase, priced against the phase floor (not combinable with instant delivery). The trade starts empty and locks the worst-case total; the filled listings (possibly fewer than requested) and the refund of any unfilled / below-ceiling remainder settle asynchronously via the trade webhook.",
         "tags": [
           "Trading"
         ],
@@ -3582,7 +3582,14 @@
                   "itemId": {
                     "type": "string",
                     "minLength": 5,
-                    "maxLength": 256
+                    "maxLength": 256,
+                    "description": "Skinshark catalog item id (from /secure/prices). Provide this OR marketHashName; when both are sent, itemId wins."
+                  },
+                  "marketHashName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 256,
+                    "description": "Exact market hash name (e.g. 'AK-47 | Redline (Field-Tested)'), resolved to a catalog item id. Ignored when itemId is supplied. CS2 only."
                   },
                   "maxPrice": {
                     "type": "number",
@@ -3630,7 +3637,6 @@
                   }
                 },
                 "required": [
-                  "itemId",
                   "maxPrice",
                   "amount",
                   "tradeUrl"
@@ -5360,7 +5366,7 @@
     "/secure/market/item": {
       "get": {
         "summary": "Get marketplace listings for one item (merchant self-trade)",
-        "description": "Returns the available listings (price/wear/stickers/etc.) for a specific item type. Pass the resulting item ids to /secure/buy.",
+        "description": "Returns the available listings (price/wear/stickers/etc.) for a specific item type. Identify the item with either `itemId` or its exact `marketHashName` (itemId wins when both are sent). Optionally filter by Doppler `phase` (e.g. 'Ruby'), `delivery`, and a `floatMin`/`floatMax` wear range. Pass the resulting item ids to /secure/buy.",
         "tags": [
           "Trading"
         ],
@@ -5374,10 +5380,24 @@
             "schema": {
               "type": "string",
               "minLength": 1,
-              "maxLength": 256
+              "maxLength": 256,
+              "description": "Skinshark catalog item id (from market suggestions or /secure/prices). Provide this OR marketHashName; when both are sent, itemId wins."
             },
-            "required": true,
+            "required": false,
+            "description": "Skinshark catalog item id (from market suggestions or /secure/prices). Provide this OR marketHashName; when both are sent, itemId wins.",
             "name": "itemId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "description": "Exact market hash name (e.g. 'AK-47 | Redline (Field-Tested)'), resolved to a catalog item id. Ignored when itemId is supplied. CS2 only."
+            },
+            "required": false,
+            "description": "Exact market hash name (e.g. 'AK-47 | Redline (Field-Tested)'), resolved to a catalog item id. Ignored when itemId is supplied. CS2 only.",
+            "name": "marketHashName",
             "in": "query"
           },
           {
@@ -5392,6 +5412,56 @@
             },
             "required": false,
             "name": "delivery",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "Phase 1",
+                "Phase 2",
+                "Phase 3",
+                "Phase 4",
+                "Ruby",
+                "Sapphire",
+                "Black Pearl",
+                "Emerald"
+              ],
+              "description": "Doppler phase to list (e.g. 'Ruby'). Returns only that phase's listings. CS2 only."
+            },
+            "required": false,
+            "description": "Doppler phase to list (e.g. 'Ruby'). Returns only that phase's listings. CS2 only.",
+            "name": "phase",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0,
+              "maximum": 1,
+              "description": "Lower bound on the item float/wear value (0-1)."
+            },
+            "required": false,
+            "description": "Lower bound on the item float/wear value (0-1).",
+            "name": "floatMin",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0,
+              "maximum": 1,
+              "description": "Upper bound on the item float/wear value (0-1)."
+            },
+            "required": false,
+            "description": "Upper bound on the item float/wear value (0-1).",
+            "name": "floatMax",
             "in": "query"
           },
           {
@@ -6706,8 +6776,8 @@
     },
     "/secure/trades/{tradeId}": {
       "get": {
-        "summary": "Get merchant self-trade(s) by id or externalId",
-        "description": "Returns the full record (status, items, collateral, bot info, error) for a trade. `tradeId` accepts either the internal trade id or the `externalId` you supplied at creation. Comma-separate up to 100 ids/externalIds (id1,id2,id3) to fetch several in one call — useful for polling multiple pending withdrawals. With one ref the response is a single trade (404 if not found); with multiple it is an array of the trades that resolved (refs that don't match are simply omitted, no 404). Scoped to trades the calling merchant initiated via /secure/*.",
+        "summary": "Get a trade by id or externalId",
+        "description": "Returns the full record (status, items, collateral, bot info, error) for a trade. `tradeId` accepts either the internal trade id or the `externalId` you supplied at creation. Comma-separate up to 100 ids/externalIds (id1,id2,id3) to fetch several in one call — useful for polling multiple pending withdrawals. With one ref the response is a single trade (404 if not found); with multiple it is an array of the trades that resolved (refs that don't match are simply omitted, no 404). Scoped to the calling merchant: returns both your own /secure/* trades and trades belonging to your clients.",
         "tags": [
           "Trading"
         ],
@@ -10182,7 +10252,7 @@
     "/client/market/item": {
       "get": {
         "summary": "Get marketplace listings for one item",
-        "description": "Returns the available listings (price/wear/stickers/etc.) for a specific item type. CS2 only - pass an itemId from /client/market/suggestions or /client/market.",
+        "description": "Returns the available listings (price/wear/stickers/etc.) for a specific item type. CS2 only. Identify the item with either an `itemId` (from /client/market/suggestions or /client/market) or its exact `marketHashName` (itemId wins when both are sent). Optionally filter by Doppler `phase` (e.g. 'Ruby'), `delivery`, and a `floatMin`/`floatMax` wear range.",
         "tags": [
           "Client"
         ],
@@ -10196,10 +10266,24 @@
             "schema": {
               "type": "string",
               "minLength": 1,
-              "maxLength": 256
+              "maxLength": 256,
+              "description": "Skinshark catalog item id (from market suggestions or /secure/prices). Provide this OR marketHashName; when both are sent, itemId wins."
             },
-            "required": true,
+            "required": false,
+            "description": "Skinshark catalog item id (from market suggestions or /secure/prices). Provide this OR marketHashName; when both are sent, itemId wins.",
             "name": "itemId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "description": "Exact market hash name (e.g. 'AK-47 | Redline (Field-Tested)'), resolved to a catalog item id. Ignored when itemId is supplied. CS2 only."
+            },
+            "required": false,
+            "description": "Exact market hash name (e.g. 'AK-47 | Redline (Field-Tested)'), resolved to a catalog item id. Ignored when itemId is supplied. CS2 only.",
+            "name": "marketHashName",
             "in": "query"
           },
           {
@@ -10214,6 +10298,56 @@
             },
             "required": false,
             "name": "delivery",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "Phase 1",
+                "Phase 2",
+                "Phase 3",
+                "Phase 4",
+                "Ruby",
+                "Sapphire",
+                "Black Pearl",
+                "Emerald"
+              ],
+              "description": "Doppler phase to list (e.g. 'Ruby'). Returns only that phase's listings. CS2 only."
+            },
+            "required": false,
+            "description": "Doppler phase to list (e.g. 'Ruby'). Returns only that phase's listings. CS2 only.",
+            "name": "phase",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0,
+              "maximum": 1,
+              "description": "Lower bound on the item float/wear value (0-1)."
+            },
+            "required": false,
+            "description": "Lower bound on the item float/wear value (0-1).",
+            "name": "floatMin",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0,
+              "maximum": 1,
+              "description": "Upper bound on the item float/wear value (0-1)."
+            },
+            "required": false,
+            "description": "Upper bound on the item float/wear value (0-1).",
+            "name": "floatMax",
             "in": "query"
           },
           {
@@ -12300,7 +12434,7 @@
     "/client/trading/withdraw/quick": {
       "post": {
         "summary": "Initiate a quick skin withdrawal",
-        "description": "Buys the N cheapest listings of a single item at or below a per-unit ceiling, instead of naming specific listings. CS2 only. `itemId` and the gross per-unit `maxPrice` (fee-inclusive) come from /secure/prices; `amount` is the quantity (1-200) and `delivery` is standard or instant. Optionally pin a Doppler `phase` (e.g. 'Ruby') to buy only that phase, priced against the phase floor (not combinable with instant delivery). The trade starts empty and locks the worst-case total; the filled listings (which may be fewer than requested) and the refund of any unfilled / below-ceiling remainder settle asynchronously via the trade webhook.",
+        "description": "Buys the N cheapest listings of a single item at or below a per-unit ceiling, instead of naming specific listings. CS2 only. Identify the item with either `itemId` or its exact `marketHashName` (itemId wins when both are sent); the per-unit `maxPrice` (fee-inclusive, gross) and `itemId` come from /secure/prices. `amount` is the quantity (1-200) and `delivery` is standard or instant. Optionally pin a Doppler `phase` (e.g. 'Ruby') to buy only that phase, priced against the phase floor (not combinable with instant delivery). The trade starts empty and locks the worst-case total; the filled listings (which may be fewer than requested) and the refund of any unfilled / below-ceiling remainder settle asynchronously via the trade webhook.",
         "tags": [
           "Withdrawals"
         ],
@@ -12318,7 +12452,14 @@
                   "itemId": {
                     "type": "string",
                     "minLength": 5,
-                    "maxLength": 256
+                    "maxLength": 256,
+                    "description": "Skinshark catalog item id (from /secure/prices). Provide this OR marketHashName; when both are sent, itemId wins."
+                  },
+                  "marketHashName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 256,
+                    "description": "Exact market hash name (e.g. 'AK-47 | Redline (Field-Tested)'), resolved to a catalog item id. Ignored when itemId is supplied. CS2 only."
                   },
                   "maxPrice": {
                     "type": "number",
@@ -12362,7 +12503,6 @@
                   }
                 },
                 "required": [
-                  "itemId",
                   "maxPrice",
                   "amount"
                 ],

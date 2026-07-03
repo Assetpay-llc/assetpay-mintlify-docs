@@ -27,6 +27,7 @@ Authorization: CLIENT_TOKEN
 | `maxPrice` | number | - | Maximum price filter (USD) |
 | `page` | number | `1` | Page number |
 | `perPage` | number | `50` | Items per page (min 1, max 1000) |
+| `development` | boolean | `false` | Sandbox flag. When `true` (or `1`), every returned item is stamped with instant delivery, a placeholder `previewToken`, and a synthetic holding `botInfo` so you can build against the full item shape using cheap live listings. |
 
 ## Response
 

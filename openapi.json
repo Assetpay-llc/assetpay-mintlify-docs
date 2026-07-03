@@ -4840,6 +4840,30 @@
           },
           {
             "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "0",
+                    "1",
+                    "true",
+                    "false"
+                  ]
+                }
+              ],
+              "default": false,
+              "description": "Sandbox flag. When true, every returned item is stamped with instant delivery, a placeholder preview token, and a synthetic holding bot so integrators can see the full item shape on cheap listings."
+            },
+            "required": false,
+            "description": "Sandbox flag. When true, every returned item is stamped with instant delivery, a placeholder preview token, and a synthetic holding bot so integrators can see the full item shape on cheap listings.",
+            "name": "development",
+            "in": "query"
+          },
+          {
+            "schema": {
               "type": "string",
               "enum": [
                 "internal",
@@ -9734,6 +9758,30 @@
             },
             "required": false,
             "name": "perPage",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "0",
+                    "1",
+                    "true",
+                    "false"
+                  ]
+                }
+              ],
+              "default": false,
+              "description": "Sandbox flag. When true, every returned item is stamped with instant delivery, a placeholder preview token, and a synthetic holding bot so integrators can see the full item shape on cheap listings."
+            },
+            "required": false,
+            "description": "Sandbox flag. When true, every returned item is stamped with instant delivery, a placeholder preview token, and a synthetic holding bot so integrators can see the full item shape on cheap listings.",
+            "name": "development",
             "in": "query"
           }
         ],

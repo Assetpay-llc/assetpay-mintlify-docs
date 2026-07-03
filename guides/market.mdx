@@ -61,6 +61,37 @@ Response:
 | `maxPrice` | number | - | Maximum price filter (USD) |
 | `page` | number | `1` | Page number |
 | `perPage` | number | `50` | Items per page (min 1, max 1000) |
+| `development` | boolean | `false` | Sandbox flag. When `true` (or `1`), every returned item is stamped with the full item shape (see [Sandbox Mode](#sandbox-mode)) |
+
+## Sandbox Mode
+
+When you pass `development=true` (or `development=1`), the market returns the same live listings but stamps every item so you can build your UI against the complete item shape without needing expensive skins in the pool:
+
+- `offer.delivery` is forced to `"instant"`
+- `previewToken` is set to a fixed placeholder inspect token
+- `botInfo` is populated with a synthetic holding bot
+
+This lets you exercise instant delivery, preview tokens, and bot attribution against cheap live listings. It only changes the shape of the response; it does not create or reserve any real items. On `/secure/market`, the `source` filter is ignored in sandbox mode so all suppliers are returned uniformly.
+
+```json
+{
+  "id": "e5f6g7h8-...",
+  "name": "P250 | Sand Dune",
+  "appid": 730,
+  "tradable": true,
+  "offer": {
+    "price": 0.03,
+    "delivery": "instant"
+  },
+  "previewToken": "0E1E9FBCF4F1CF0F162A2E6D260F3E0A36929AF6FE0D4EE20D66137E166CF38CAD",
+  "botInfo": {
+    "name": "BoulderBit",
+    "avatar": "https://avatars.fastly.steamstatic.com/9cd97136ae9dd40fd717acf1756cf70da876f5b6_full.jpg",
+    "steamId": "76561198733619862",
+    "joined": "2026-02-20T00:00:00.000Z"
+  }
+}
+```
 
 ## Search Suggestions
 

@@ -45,7 +45,7 @@ interface Trade {
 
   // Timing
   holdEndDate?: Date;            // When the Steam hold expires (present from "hold" onward)
-  readyAt?: Date;                // When the trade became ready
+  activeAt?: Date;               // When the trade offer went live at the user (present from "active" onward)
   createdAt: Date;
   updatedAt: Date;
 

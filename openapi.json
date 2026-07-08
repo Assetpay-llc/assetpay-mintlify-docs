@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "AssetPay Public API",
-    "version": "0.7.1",
+    "version": "0.7.3",
     "description": "Public trading API - skin deposits, withdrawals, pricing, client endpoints, and identity verification."
   },
   "servers": [
@@ -2385,9 +2385,10 @@
                           "type": "string",
                           "description": "Trade-level failure reason. Withdraw: a TradeFailureCode, set only when the whole trade failed with one shared cause. Deposit: a Steam job error key."
                         },
-                        "readyAt": {
+                        "activeAt": {
                           "type": "string",
-                          "format": "date-time"
+                          "format": "date-time",
+                          "description": "When the trade first became active (the trade offer went live at the user). Absent until then."
                         },
                         "createdAt": {
                           "type": "string",
@@ -3224,9 +3225,10 @@
                           "type": "string",
                           "description": "Trade-level failure reason. Withdraw: a TradeFailureCode, set only when the whole trade failed with one shared cause. Deposit: a Steam job error key."
                         },
-                        "readyAt": {
+                        "activeAt": {
                           "type": "string",
-                          "format": "date-time"
+                          "format": "date-time",
+                          "description": "When the trade first became active (the trade offer went live at the user). Absent until then."
                         },
                         "createdAt": {
                           "type": "string",
@@ -4025,9 +4027,10 @@
                           "type": "string",
                           "description": "Trade-level failure reason. Withdraw: a TradeFailureCode, set only when the whole trade failed with one shared cause. Deposit: a Steam job error key."
                         },
-                        "readyAt": {
+                        "activeAt": {
                           "type": "string",
-                          "format": "date-time"
+                          "format": "date-time",
+                          "description": "When the trade first became active (the trade offer went live at the user). Absent until then."
                         },
                         "createdAt": {
                           "type": "string",
@@ -6507,9 +6510,10 @@
                                 "type": "string",
                                 "description": "Trade-level failure reason. Withdraw: a TradeFailureCode, set only when the whole trade failed with one shared cause. Deposit: a Steam job error key."
                               },
-                              "readyAt": {
+                              "activeAt": {
                                 "type": "string",
-                                "format": "date-time"
+                                "format": "date-time",
+                                "description": "When the trade first became active (the trade offer went live at the user). Absent until then."
                               },
                               "createdAt": {
                                 "type": "string",
@@ -7204,9 +7208,10 @@
                               "type": "string",
                               "description": "Trade-level failure reason. Withdraw: a TradeFailureCode, set only when the whole trade failed with one shared cause. Deposit: a Steam job error key."
                             },
-                            "readyAt": {
+                            "activeAt": {
                               "type": "string",
-                              "format": "date-time"
+                              "format": "date-time",
+                              "description": "When the trade first became active (the trade offer went live at the user). Absent until then."
                             },
                             "createdAt": {
                               "type": "string",
@@ -7596,9 +7601,10 @@
                                 "type": "string",
                                 "description": "Trade-level failure reason. Withdraw: a TradeFailureCode, set only when the whole trade failed with one shared cause. Deposit: a Steam job error key."
                               },
-                              "readyAt": {
+                              "activeAt": {
                                 "type": "string",
-                                "format": "date-time"
+                                "format": "date-time",
+                                "description": "When the trade first became active (the trade offer went live at the user). Absent until then."
                               },
                               "createdAt": {
                                 "type": "string",
@@ -9000,9 +9006,10 @@
                                 "type": "string",
                                 "description": "Trade-level failure reason. Withdraw: a TradeFailureCode, set only when the whole trade failed with one shared cause. Deposit: a Steam job error key."
                               },
-                              "readyAt": {
+                              "activeAt": {
                                 "type": "string",
-                                "format": "date-time"
+                                "format": "date-time",
+                                "description": "When the trade first became active (the trade offer went live at the user). Absent until then."
                               },
                               "createdAt": {
                                 "type": "string",
@@ -11426,9 +11433,10 @@
                           "type": "string",
                           "description": "Trade-level failure reason. Withdraw: a TradeFailureCode, set only when the whole trade failed with one shared cause. Deposit: a Steam job error key."
                         },
-                        "readyAt": {
+                        "activeAt": {
                           "type": "string",
-                          "format": "date-time"
+                          "format": "date-time",
+                          "description": "When the trade first became active (the trade offer went live at the user). Absent until then."
                         },
                         "createdAt": {
                           "type": "string",
@@ -12201,9 +12209,10 @@
                           "type": "string",
                           "description": "Trade-level failure reason. Withdraw: a TradeFailureCode, set only when the whole trade failed with one shared cause. Deposit: a Steam job error key."
                         },
-                        "readyAt": {
+                        "activeAt": {
                           "type": "string",
-                          "format": "date-time"
+                          "format": "date-time",
+                          "description": "When the trade first became active (the trade offer went live at the user). Absent until then."
                         },
                         "createdAt": {
                           "type": "string",
@@ -12938,9 +12947,10 @@
                           "type": "string",
                           "description": "Trade-level failure reason. Withdraw: a TradeFailureCode, set only when the whole trade failed with one shared cause. Deposit: a Steam job error key."
                         },
-                        "readyAt": {
+                        "activeAt": {
                           "type": "string",
-                          "format": "date-time"
+                          "format": "date-time",
+                          "description": "When the trade first became active (the trade offer went live at the user). Absent until then."
                         },
                         "createdAt": {
                           "type": "string",

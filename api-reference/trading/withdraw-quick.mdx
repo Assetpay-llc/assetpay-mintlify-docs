@@ -5,9 +5,9 @@ description: "Buy the N cheapest listings of an item up to a per-unit price ceil
 
 # POST /client/trading/withdraw/quick
 
-Initiates a **quick** withdrawal. Instead of naming specific listings, you pass a catalog `itemId`, a per-unit price ceiling, and an amount — AssetPay buys the cheapest available listings at or below your ceiling and delivers them to the user via Steam trade offer.
+Initiates a **quick** withdrawal. Instead of naming specific listings, you pass an `itemId`, a per-unit price ceiling, and an amount — AssetPay buys the cheapest available listings at or below your ceiling and delivers them to the user via Steam trade offer.
 
-**CS2 only.** Rust is not supported and is rejected with `QUICK_BUY_UNSUPPORTED_GAME` (32).
+**Available for CS2 and Rust.** Other games are rejected with `QUICK_BUY_UNSUPPORTED_GAME` (32). For Rust, `phase` and `delivery: "instant"` are not available (CS2-only options).
 
 **Authentication:** Client Token (`Authorization` header)
 
@@ -31,13 +31,13 @@ Authorization: CLIENT_TOKEN
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `itemId` | string | Yes\* | Catalog item id (the `id` from `/client/market/suggestions` or `itemId` from `/secure/prices`). 5–256 chars. Provide this **or** `marketHashName`; `itemId` wins when both are sent. |
-| `marketHashName` | string | Yes\* | Exact market hash name (e.g. `AK-47 \| Redline (Field-Tested)`), resolved to the catalog item id. Ignored when `itemId` is supplied. |
+| `itemId` | string | Yes\* | Item id from `/secure/prices` (CS2 catalog id, or any listing id of the item for Rust). 5–256 chars. Provide this **or** `marketHashName`; `itemId` wins when both are sent. |
+| `marketHashName` | string | Yes\* | Exact market hash name (e.g. `AK-47 \| Redline (Field-Tested)`), resolved to the item. Ignored when `itemId` is supplied. |
 | `maxPrice` | number | Yes | **Gross** per-unit price ceiling in USD (fee-inclusive — the same basis as the `withdraw` price in `/secure/prices`). Max \$100,000. AssetPay backs its fee out of this to get the sourcing ceiling sent to the marketplace. |
 | `amount` | number | Yes | How many units to buy. Integer, 1–200. |
-| `delivery` | string | No | `"standard"` or `"instant"`. Defaults to `"standard"`. |
-| `phase` | string | No | Doppler phase to buy: `"Phase 1"`–`"Phase 4"`, `"Ruby"`, `"Sapphire"`, `"Black Pearl"`, `"Emerald"`. Prices against that phase's floor. **Cannot be combined with `delivery: "instant"`** (rejected with `VALIDATION_FAILED`). |
-| `game` | string | No | Must be `"730"` (CS2). Defaults to `"730"`. |
+| `delivery` | string | No | `"standard"` or `"instant"`. Defaults to `"standard"`. `"instant"` is CS2-only. |
+| `phase` | string | No | **CS2 only.** Doppler phase to buy: `"Phase 1"`–`"Phase 4"`, `"Ruby"`, `"Sapphire"`, `"Black Pearl"`, `"Emerald"`. Prices against that phase's floor. **Cannot be combined with `delivery: "instant"`** (rejected with `VALIDATION_FAILED`). |
+| `game` | string | No | `"730"` (CS2) or `"252490"` (Rust). Defaults to `"730"`. |
 | `externalId` | string | No | Your unique tracking ID (max 128 chars). Must be unique per trade. |
 
 \* Provide either `itemId` or `marketHashName`.
@@ -76,13 +76,13 @@ The response is a full [Trade](/reference/types#trade) object. Unlike the determ
 - `items` contains **one pre-filled row per requested unit** (so `amount: 3` returns 3 rows), each carrying the ceiling `price` and `delivery` — the same minimal shape as a standard buy item. The catalog `itemId` is used as each row's placeholder `id` until it is **bound** to a real listing.
 - `totalPrice` is the **worst-case lock** (`amount × maxPrice`, after rounding), not the final spend.
 
-As the marketplace fills the order, each row is bound to a real listing — its `id` becomes the listing id and its price updates to the actual fill — and the trade settles asynchronously. Fills may be **fewer than requested** if supply runs out at your ceiling; those unfilled rows go to `failed`, and the unfilled units plus any below-ceiling savings are refunded. Poll `GET /client/trades/{id}` or rely on callbacks / the WebSocket feed for the final view. Once settled, `totalPrice` reflects the **actual** amount spent on the filled items.
+As the order fills, each row is bound to a real listing — its `id` becomes the listing id and its price updates to the actual fill — and the trade settles asynchronously. For CS2 the fills arrive from the marketplace over time; for Rust the cheapest units at or below your ceiling are selected in one pass right after approval. Fills may be **fewer than requested** if supply runs out at your ceiling; those unfilled rows go to `failed`, and the unfilled units plus any below-ceiling savings are refunded. Poll `GET /client/trades/{id}` or rely on callbacks / the WebSocket feed for the final view. Once settled, `totalPrice` reflects the **actual** amount spent on the filled items.
 
 ## How it works
 
 1. **Lock** — the worst-case total (`amount × maxPrice`) is locked from your merchant balance up front.
 2. **Approval** — an `initiated` callback fires to your backend before anything is purchased (same as the standard withdraw). Approve with `2xx`, reject with `4xx`.
-3. **Fill** — AssetPay calls the marketplace, which buys the cheapest `amount` listings at or below the sourcing ceiling. Partial fills are normal.
+3. **Fill** — AssetPay buys the cheapest `amount` listings at or below the sourcing ceiling. Partial fills are normal.
 4. **Settle** — filled items settle (sourcing + your fee); the unfilled remainder and below-ceiling savings are refunded to your balance.
 
 <Warning>
@@ -103,10 +103,12 @@ Shared across all clients of the same merchant.
 | Code | Key | When |
 |------|-----|------|
 | 1 | `EXTERNAL_ID_EXISTS` | The `externalId` is already in use |
-| 32 | `QUICK_BUY_UNSUPPORTED_GAME` | `game` is not CS2 (`"730"`) |
+| 32 | `QUICK_BUY_UNSUPPORTED_GAME` | `game` is not CS2 (`"730"`) or Rust (`"252490"`) |
 | 12 | `MERCHANT_BALANCE_LOW` | Your merchant balance can't cover the worst-case lock |
 | 13 | `INVALID_TRADEURL` | User's trade URL is invalid |
+| 14 | `LISTING_NOT_FOUND` | Rust: the `itemId` / `marketHashName` doesn't match any current listing |
 | 20 | `WITHDRAW_IN_PROGRESS` | Another withdrawal is already processing for this user |
-| 1001 | `VALIDATION_FAILED` | `amount` out of range (1–200), `maxPrice` ≤ 0, or other invalid input |
+| 42 | `INSUFFICIENT_STOCK` | Rust: no units currently sourceable at or below `maxPrice` |
+| 1001 | `VALIDATION_FAILED` | `amount` out of range (1–200), `maxPrice` ≤ 0, `phase` / instant delivery on Rust, or other invalid input |
 | 1601 | `INVALID_AMOUNT` | The derived sourcing ceiling or lock total was zero or negative |
 | 1705 | `MERCHANT_NO_CALLBACK_URL` | Merchant has no active callback URL configured |

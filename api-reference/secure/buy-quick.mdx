@@ -5,9 +5,9 @@ description: "Merchant buys the N cheapest listings of an item up to a price cei
 
 # POST /secure/buy/quick
 
-Merchant-facing equivalent of [`POST /client/trading/withdraw/quick`](/api-reference/trading/withdraw-quick). Instead of naming specific listings, you pass a catalog `itemId`, a per-unit ceiling, and an amount — AssetPay buys the cheapest available listings at or below your ceiling and delivers them to the supplied `tradeUrl`. The merchant's USD wallet is debited.
+Merchant-facing equivalent of [`POST /client/trading/withdraw/quick`](/api-reference/trading/withdraw-quick). Instead of naming specific listings, you pass an `itemId`, a per-unit ceiling, and an amount — AssetPay buys the cheapest available listings at or below your ceiling and delivers them to the supplied `tradeUrl`. The merchant's USD wallet is debited.
 
-**CS2 only.** Rust is rejected with `QUICK_BUY_UNSUPPORTED_GAME` (32).
+**Available for CS2 and Rust.** Other games are rejected with `QUICK_BUY_UNSUPPORTED_GAME` (32). For Rust, `phase` and `delivery: "instant"` are not available (CS2-only options).
 
 **Authentication:** Merchant API Key (`api-key` header)
 **Scope:** `CORE_ACCESS`
@@ -34,13 +34,13 @@ api-key: ap_...
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `tradeUrl` | string | Yes | Steam trade URL of the account receiving the items |
-| `itemId` | string | Yes\* | Catalog item id (the `itemId` from `/secure/prices` or `id` from `/secure/market/suggestions`). 5–256 chars. Provide this **or** `marketHashName`; `itemId` wins when both are sent. |
-| `marketHashName` | string | Yes\* | Exact market hash name (e.g. `AK-47 \| Redline (Field-Tested)`), resolved to the catalog item id. Ignored when `itemId` is supplied. |
+| `itemId` | string | Yes\* | Item id from `/secure/prices` (CS2 catalog id, or any listing id of the item for Rust). 5–256 chars. Provide this **or** `marketHashName`; `itemId` wins when both are sent. |
+| `marketHashName` | string | Yes\* | Exact market hash name (e.g. `AK-47 \| Redline (Field-Tested)`), resolved to the item. Ignored when `itemId` is supplied. |
 | `maxPrice` | number | Yes | **Gross** per-unit price ceiling in USD (fee-inclusive — same basis as the `withdraw` price in `/secure/prices`). Max $100,000. |
 | `amount` | number | Yes | How many units to buy. Integer, 1–200. |
-| `delivery` | string | No | `"standard"` or `"instant"`. Defaults to `"standard"`. |
-| `phase` | string | No | Doppler phase to buy: `"Phase 1"`–`"Phase 4"`, `"Ruby"`, `"Sapphire"`, `"Black Pearl"`, `"Emerald"`. Prices against that phase's floor. **Cannot be combined with `delivery: "instant"`** (rejected with `VALIDATION_FAILED`). |
-| `game` | string | No | Must be `"730"` (CS2). Defaults to `"730"`. |
+| `delivery` | string | No | `"standard"` or `"instant"`. Defaults to `"standard"`. `"instant"` is CS2-only. |
+| `phase` | string | No | **CS2 only.** Doppler phase to buy: `"Phase 1"`–`"Phase 4"`, `"Ruby"`, `"Sapphire"`, `"Black Pearl"`, `"Emerald"`. Prices against that phase's floor. **Cannot be combined with `delivery: "instant"`** (rejected with `VALIDATION_FAILED`). |
+| `game` | string | No | `"730"` (CS2) or `"252490"` (Rust). Defaults to `"730"`. |
 | `externalId` | string | No | Your unique tracking ID |
 
 \* Provide either `itemId` or `marketHashName`.
@@ -96,4 +96,4 @@ The merchant's available wallet balance must cover the worst-case lock (`amount 
 
 ## Errors
 
-Same set as [`POST /client/trading/withdraw/quick`](/api-reference/trading/withdraw-quick#errors). Common: `QUICK_BUY_UNSUPPORTED_GAME` (32, non-CS2), `MERCHANT_BALANCE_LOW` (12), `MERCHANT_NO_CALLBACK_URL` (1705), `INVALID_TRADEURL` (13), `VALIDATION_FAILED` (1001).
+Same set as [`POST /client/trading/withdraw/quick`](/api-reference/trading/withdraw-quick#errors). Common: `QUICK_BUY_UNSUPPORTED_GAME` (32, unsupported game), `MERCHANT_BALANCE_LOW` (12), `MERCHANT_NO_CALLBACK_URL` (1705), `INVALID_TRADEURL` (13), `INSUFFICIENT_STOCK` (42, Rust: nothing sourceable at or below `maxPrice`), `VALIDATION_FAILED` (1001).

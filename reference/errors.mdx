@@ -115,7 +115,9 @@ Returned by deposit, withdrawal, inventory, and market endpoints.
 | 22 | `INVALID_STATE_TRANSITION` | 409 | Invalid trade state transition |
 | 23 | `INVALID_TRADE_ID` | 400 | Invalid trade ID |
 | 31 | `STEAM_UNAVAILABLE` | 424 | Steam temporarily couldn't serve the request; retry shortly |
+| 32 | `QUICK_BUY_UNSUPPORTED_GAME` | 400 | Quick buy is not available for this game |
 | 33 | `STEAM_RATE_LIMITED` | 424 | Steam is rate-limiting inventory requests; retry shortly |
+| 42 | `INSUFFICIENT_STOCK` | 409 | Requested amount exceeds the available marketplace stock for this listing |
 
 ## Asynchronous Trade Failure Codes
 

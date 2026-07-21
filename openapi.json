@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "AssetPay Public API",
-    "version": "0.7.3",
+    "version": "0.7.5",
     "description": "Public trading API - skin deposits, withdrawals, pricing, client endpoints, and identity verification."
   },
   "servers": [
@@ -3566,7 +3566,7 @@
     "/secure/buy/quick": {
       "post": {
         "summary": "Quick-buy skins from the marketplace (merchant self-trade)",
-        "description": "Buys the N cheapest listings of a single item at or below a per-unit ceiling. CS2 only. Identify the item with either `itemId` or its exact `marketHashName` (itemId wins when both are sent); the per-unit `maxPrice` (fee-inclusive, gross) and `itemId` come from /secure/prices. `amount` is 1-200 and `delivery` is standard or instant. Optionally pin a Doppler `phase` (e.g. 'Ruby') to buy only that phase, priced against the phase floor (not combinable with instant delivery). The trade starts empty and locks the worst-case total; the filled listings (possibly fewer than requested) and the refund of any unfilled / below-ceiling remainder settle asynchronously via the trade webhook.",
+        "description": "Buys the N cheapest listings of a single item at or below a per-unit ceiling. Available for CS2 and Rust. Identify the item with either `itemId` or its exact `marketHashName` (itemId wins when both are sent); the per-unit `maxPrice` (fee-inclusive, gross) and `itemId` come from /secure/prices. `amount` is 1-200 and `delivery` is standard or instant. Optionally pin a Doppler `phase` (e.g. 'Ruby') to buy only that phase, priced against the phase floor (not combinable with instant delivery); phase and instant delivery are CS2-only. The trade starts empty and locks the worst-case total; the filled listings (possibly fewer than requested) and the refund of any unfilled / below-ceiling remainder settle asynchronously via the trade webhook.",
         "tags": [
           "Trading"
         ],
@@ -3585,13 +3585,13 @@
                     "type": "string",
                     "minLength": 5,
                     "maxLength": 256,
-                    "description": "Skinshark catalog item id (from /secure/prices). Provide this OR marketHashName; when both are sent, itemId wins."
+                    "description": "Item id from /secure/prices (Skinshark catalog id for CS2, listing id for Rust). Provide this OR marketHashName; when both are sent, itemId wins."
                   },
                   "marketHashName": {
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 256,
-                    "description": "Exact market hash name (e.g. 'AK-47 | Redline (Field-Tested)'), resolved to a catalog item id. Ignored when itemId is supplied. CS2 only."
+                    "description": "Exact market hash name (e.g. 'AK-47 | Redline (Field-Tested)'), resolved to a catalog item id. Ignored when itemId is supplied."
                   },
                   "maxPrice": {
                     "type": "number",
@@ -12491,7 +12491,7 @@
     "/client/trading/withdraw/quick": {
       "post": {
         "summary": "Initiate a quick skin withdrawal",
-        "description": "Buys the N cheapest listings of a single item at or below a per-unit ceiling, instead of naming specific listings. CS2 only. Identify the item with either `itemId` or its exact `marketHashName` (itemId wins when both are sent); the per-unit `maxPrice` (fee-inclusive, gross) and `itemId` come from /secure/prices. `amount` is the quantity (1-200) and `delivery` is standard or instant. Optionally pin a Doppler `phase` (e.g. 'Ruby') to buy only that phase, priced against the phase floor (not combinable with instant delivery). The trade starts empty and locks the worst-case total; the filled listings (which may be fewer than requested) and the refund of any unfilled / below-ceiling remainder settle asynchronously via the trade webhook.",
+        "description": "Buys the N cheapest listings of a single item at or below a per-unit ceiling, instead of naming specific listings. Available for CS2 and Rust. Identify the item with either `itemId` or its exact `marketHashName` (itemId wins when both are sent); the per-unit `maxPrice` (fee-inclusive, gross) and `itemId` come from /secure/prices. `amount` is the quantity (1-200) and `delivery` is standard or instant. Optionally pin a Doppler `phase` (e.g. 'Ruby') to buy only that phase, priced against the phase floor (not combinable with instant delivery); phase and instant delivery are CS2-only. The trade starts empty and locks the worst-case total; the filled listings (which may be fewer than requested) and the refund of any unfilled / below-ceiling remainder settle asynchronously via the trade webhook.",
         "tags": [
           "Withdrawals"
         ],
@@ -12510,13 +12510,13 @@
                     "type": "string",
                     "minLength": 5,
                     "maxLength": 256,
-                    "description": "Skinshark catalog item id (from /secure/prices). Provide this OR marketHashName; when both are sent, itemId wins."
+                    "description": "Item id from /secure/prices (Skinshark catalog id for CS2, listing id for Rust). Provide this OR marketHashName; when both are sent, itemId wins."
                   },
                   "marketHashName": {
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 256,
-                    "description": "Exact market hash name (e.g. 'AK-47 | Redline (Field-Tested)'), resolved to a catalog item id. Ignored when itemId is supplied. CS2 only."
+                    "description": "Exact market hash name (e.g. 'AK-47 | Redline (Field-Tested)'), resolved to a catalog item id. Ignored when itemId is supplied."
                   },
                   "maxPrice": {
                     "type": "number",

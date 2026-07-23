@@ -3,8 +3,6 @@ title: "List Self-Trades"
 description: "Cursor-paginated history of trades initiated via /secure/buy and /secure/sell."
 ---
 
-# GET /secure/trades
-
 Returns trades the merchant initiated through `/secure/sell` or `/secure/buy`. End-user (client) trades are **not** included on this endpoint — clients can fetch their own trade history via `/client/trades` with a client token.
 
 **Authentication:** Merchant API Key (`api-key` header)

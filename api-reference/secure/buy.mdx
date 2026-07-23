@@ -3,8 +3,6 @@ title: "Buy Items (Self-Trade)"
 description: "Merchant buys skins from the marketplace, delivered to a Steam account."
 ---
 
-# POST /secure/buy
-
 Merchant-facing equivalent of [`POST /client/trading/withdraw`](/api-reference/trading/withdraw). AssetPay sources the listings from the upstream marketplace and delivers them to the supplied `tradeUrl`. The merchant's USD wallet is debited.
 
 **Authentication:** Merchant API Key (`api-key` header)

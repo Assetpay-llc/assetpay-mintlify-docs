@@ -3,8 +3,6 @@ title: "Quick Withdrawal"
 description: "Buy the N cheapest listings of an item up to a per-unit price ceiling."
 ---
 
-# POST /client/trading/withdraw/quick
-
 Initiates a **quick** withdrawal. Instead of naming specific listings, you pass an `itemId`, a per-unit price ceiling, and an amount — AssetPay buys the cheapest available listings at or below your ceiling and delivers them to the user via Steam trade offer.
 
 **Available for CS2 and Rust.** Other games are rejected with `QUICK_BUY_UNSUPPORTED_GAME` (32). For Rust, `phase` and `delivery: "instant"` are not available (CS2-only options).

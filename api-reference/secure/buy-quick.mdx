@@ -3,8 +3,6 @@ title: "Quick Buy (Self-Trade)"
 description: "Merchant buys the N cheapest listings of an item up to a price ceiling, delivered to a Steam account."
 ---
 
-# POST /secure/buy/quick
-
 Merchant-facing equivalent of [`POST /client/trading/withdraw/quick`](/api-reference/trading/withdraw-quick). Instead of naming specific listings, you pass an `itemId`, a per-unit ceiling, and an amount — AssetPay buys the cheapest available listings at or below your ceiling and delivers them to the supplied `tradeUrl`. The merchant's USD wallet is debited.
 
 **Available for CS2 and Rust.** Other games are rejected with `QUICK_BUY_UNSUPPORTED_GAME` (32). For Rust, `phase` and `delivery: "instant"` are not available (CS2-only options).

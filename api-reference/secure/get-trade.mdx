@@ -3,8 +3,6 @@ title: "Get Self-Trade(s)"
 description: "Fetch one or more merchant self-trades by trade id or your externalId."
 ---
 
-# GET /secure/trades/&#123;tradeId&#125;
-
 Returns trades initiated via `/secure/sell` or `/secure/buy`. `tradeId` accepts either the internal trade id or the `externalId` you supplied at creation. Scoped to the calling merchant — another merchant's trade or a `client`-source trade is treated as not found.
 
 **Authentication:** Merchant API Key (`api-key` header)

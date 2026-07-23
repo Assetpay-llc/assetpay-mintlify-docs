@@ -8,6 +8,15 @@
     "dark": "#00B87A"
   },
   "favicon": "/favicon.svg",
+  "seo": {
+    "indexing": "all",
+    "metatags": {
+      "og:type": "website",
+      "og:site_name": "AssetPay",
+      "og:image": "https://assetpay.gg/opengraph-image",
+      "twitter:card": "summary_large_image"
+    }
+  },
   "openapi": "openapi.json",
   "navigation": {
     "tabs": [
@@ -127,7 +136,7 @@
     "primary": {
       "type": "button",
       "label": "Dashboard",
-      "href": "https://staging.assetpay.gg"
+      "href": "https://assetpay.gg/merchant"
     }
   },
   "contextual": {

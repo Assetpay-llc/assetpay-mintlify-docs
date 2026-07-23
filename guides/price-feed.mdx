@@ -9,6 +9,10 @@ The AssetPay **price feed** is a low-latency firehose of item and price changes,
 
 Each consumer reads a **snapshot** of current state once, then **tails the stream** for incremental changes. If you fall behind or reconnect, you re-read the snapshot and resume - no events are lost.
 
+<Note>
+The Redis feed carries raw supplier prices and requires separately provisioned credentials. If you only need your own priced view of the market (the same items `/secure/market?source=internal` returns, with your fee applied), the WebSocket [Market Updates](/guides/websocket#market-updates) event covers that with just your API key.
+</Note>
+
 ## Connection
 
 <ParamField path="endpoint">`rediss://feed.assetpay.gg:6382` - TLS only; plaintext connections are rejected.</ParamField>

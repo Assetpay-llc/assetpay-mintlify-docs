@@ -46,6 +46,8 @@ See [`GET /client/market`](/api-reference/client/get-market#response) for the fu
 
 Items sourced from the AssetPay autoseller pool (self-owned, instant delivery) additionally carry `previewToken` (Steam inspect/preview token) and `botInfo` (the holding bot). Third-party marketplace listings expose an inspect link upstream and have no `previewToken`.
 
+To keep results current without polling, subscribe to the WebSocket [Market Updates](/guides/websocket#market-updates) event. It pushes `internal`-source item and price changes in the same item shape, priced for your account.
+
 ## Rate Limits
 
 | Merchant Status | Limit |

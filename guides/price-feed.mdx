@@ -29,10 +29,17 @@ The feed is a raw Redis (TCP) endpoint, so `feed.assetpay.gg` resolves directly 
 
 ### Access tiers
 
+Your ACL user determines which keys you can read at all - anything outside your scope returns `NOPERM`.
+
 | ACL user | Sees | Use case |
 |----------|------|----------|
-| `market` | Your own per-market stream only (`autoseller:items:feed:<marketplace>`) | A single-marketplace tenant - you never see another market's prices |
+| Per-market tenant (e.g. `waxpeer`, `ecosteam`) | That one market's stream + snapshot only | A single-marketplace tenant - you never see another market's prices |
+| `market` | Every per-market stream (`autoseller:items:feed:*`) | An aggregator that wants each market separately |
 | `partner` | The consolidated stream, all marketplaces in one block | A first-party consumer aggregating every market |
+
+<Note>
+Most integrations get a per-market user named after their market. Your username **is** your scope - the credentials AssetPay issues you already point at the right stream.
+</Note>
 
 ## Streams & keys
 
@@ -43,7 +50,7 @@ The feed is a raw Redis (TCP) endpoint, so `feed.assetpay.gg` resolves directly 
 | `autoseller:items:feed:<marketplace>` | Stream | Per-marketplace stream |
 | `autoseller:items:feed:<marketplace>:snapshot` | Hash | Current state for that marketplace |
 
-Marketplaces: `white_market`, `waxpeer`, `shadowpay`, `csgoempire`, `market_csgo`, `assetpay`. Only priced markets emit data (today that is `white_market`).
+Per-market streams exist for `white_market`, `waxpeer`, `ecosteam`, `cs2dt` and `igxe`. Only markets that are actually priced emit data - today `white_market`, `waxpeer` and `ecosteam`. `cs2dt` and `igxe` are reserved: their streams exist and stay empty until they get a price source, so a consumer can connect ahead of launch and simply receive nothing.
 
 ## Event format
 
@@ -71,13 +78,13 @@ A new item entered the pool (or its block was refreshed). On a **per-market** st
   "iconUrl": "https://...",
   "tradable": true,
   "delivery": "instant",
-  "marketplace": "white_market",
+  "marketplace": "ecosteam",
   "price": "12.43",
   "updatedAt": "2026-06-15T12:00:00.000Z"
 }
 ```
 
-On the **consolidated** stream, prices are nested per marketplace:
+On the **consolidated** stream, prices are nested per marketplace. An item only carries the markets it is priced on, so the set of keys varies per item:
 
 ```json
 {
@@ -85,10 +92,14 @@ On the **consolidated** stream, prices are nested per marketplace:
   "appid": 730,
   "name": "AK-47 | Redline (Field-Tested)",
   "prices": {
-    "white_market": { "price": "12.43", "updatedAt": "2026-06-15T12:00:00.000Z" }
+    "white_market": { "price": "12.43", "updatedAt": "2026-06-15T12:00:00.000Z" },
+    "waxpeer": { "price": "12.44", "updatedAt": "2026-06-15T12:00:00.000Z" },
+    "ecosteam": { "price": "12.41", "updatedAt": "2026-06-15T12:00:00.000Z" }
   }
 }
 ```
+
+Prices differ per market because each is quoted against that market's own competitor book, under the same floor.
 
 ### `price.update`
 
@@ -129,9 +140,10 @@ On reconnect, re-run from step 1. The snapshot is always current, so re-seeding 
 import Redis from "ioredis";
 import { readFileSync } from "node:fs";
 
-const STREAM = "autoseller:items:feed:white_market";
+// Your own market's stream - the one your ACL user is scoped to.
+const STREAM = "autoseller:items:feed:ecosteam";
 
-const r = new Redis("rediss://market:<YOUR_FEED_PASSWORD>@feed.assetpay.gg:6382", {
+const r = new Redis("rediss://ecosteam:<YOUR_FEED_PASSWORD>@feed.assetpay.gg:6382", {
   tls: { ca: readFileSync("ca.crt"), servername: "feed.assetpay.gg" },
 });
 
@@ -165,4 +177,5 @@ Use a dedicated client for the blocking `XREAD ... BLOCK` loop - it ties up the 
 
 - **Prices are decimal-dollar strings** (e.g. `"12.43"`), not cents - parse carefully to avoid float rounding.
 - **Streams are length-capped** (~100k entries, trimmed automatically) - always seed from the snapshot rather than reading the stream from `0`.
+- **The snapshot is the source of truth.** Membership is reconciled against it continuously, so an item present there is live even if you missed its `item.add`.
 - **Credentials and the CA** are issued per integration - contact AssetPay to provision feed access.

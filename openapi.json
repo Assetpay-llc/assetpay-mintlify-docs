@@ -2850,7 +2850,7 @@
                     "type": "integer",
                     "minimum": 30,
                     "maximum": 720,
-                    "description": "Minutes after creation to automatically cancel still-undelivered items (30-720). Defaults to 120; 720 disables auto-cancel. CS2 only."
+                    "description": "Minutes after creation to automatically cancel still-undelivered items (30-720). Defaults to 30; 720 disables auto-cancel. CS2 only."
                   },
                   "game": {
                     "type": "string",
@@ -3664,7 +3664,7 @@
                     "type": "integer",
                     "minimum": 30,
                     "maximum": 720,
-                    "description": "Minutes after creation to automatically cancel still-undelivered items (30-720). Defaults to 120; 720 disables auto-cancel. CS2 only."
+                    "description": "Minutes after creation to automatically cancel still-undelivered items (30-720). Defaults to 30; 720 disables auto-cancel. CS2 only."
                   },
                   "game": {
                     "type": "string",
@@ -12325,7 +12325,7 @@
                     "type": "integer",
                     "minimum": 30,
                     "maximum": 720,
-                    "description": "Minutes after creation to automatically cancel still-undelivered items (30-720). Defaults to 120; 720 disables auto-cancel. CS2 only."
+                    "description": "Minutes after creation to automatically cancel still-undelivered items (30-720). Defaults to 30; 720 disables auto-cancel. CS2 only."
                   },
                   "game": {
                     "type": "string",
@@ -13075,7 +13075,7 @@
                     "type": "integer",
                     "minimum": 30,
                     "maximum": 720,
-                    "description": "Minutes after creation to automatically cancel still-undelivered items (30-720). Defaults to 120; 720 disables auto-cancel. CS2 only."
+                    "description": "Minutes after creation to automatically cancel still-undelivered items (30-720). Defaults to 30; 720 disables auto-cancel. CS2 only."
                   },
                   "game": {
                     "type": "string",

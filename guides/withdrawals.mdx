@@ -59,7 +59,7 @@ Authorization: CLIENT_TOKEN
 | `items[].price` | number | Yes | Purchase price in USD (max \$100,000). Validated against the current marketplace price. |
 | `items[].amount` | number | No | Quantity for stackable items (default: 1, max: 10000) |
 | `game` | string | No | `"730"` (CS2) or `"252490"` (Rust). Defaults to `"730"`. |
-| `autoCancel` | number | No | CS2 only. Minutes until undelivered items are cancelled automatically (30-720, default 120, `720` disables). See [Automatic cancellation](#automatic-cancellation). |
+| `autoCancel` | number | No | CS2 only. Minutes until undelivered items are cancelled automatically (30-720, default 30, `720` disables). See [Automatic cancellation](#automatic-cancellation). |
 | `externalId` | string | No | Your unique tracking ID (max 128 chars) |
 
 ## Response
@@ -205,7 +205,7 @@ CS2 withdrawals can also cancel themselves. Every withdraw and quick withdraw ac
 
 | Value | Behaviour |
 |-------|-----------|
-| omitted | Defaults to `120` (two hours) |
+| omitted | Defaults to `30`, the shortest window the marketplace allows |
 | `30`-`719` | Cancel still-undelivered items after that many minutes |
 | `720` | Disabled. The trade stays open until it settles or you cancel it yourself |
 
@@ -213,7 +213,7 @@ Rust is not supported: its supplier has no cancel API, so sending `autoCancel` o
 
 Two things to know about the timing:
 
-- The marketplace refuses cancels on items younger than 30 minutes, so `autoCancel: 30` fires a few minutes later than the literal deadline. Values below 30 are rejected.
+- The marketplace refuses cancels on items younger than 30 minutes, so the 30-minute default lands a few minutes past the literal deadline rather than exactly on it. Values below 30 are rejected.
 - Only items still undelivered when the timer fires are cancelled. Anything already delivered is untouched, so a partly-filled trade keeps what it received.
 
 Cancelled items behave exactly like a [manual item cancel](#cancelling-a-withdrawal-item): the item moves to `canceled` and the refund reaches your wallet asynchronously through the standard callback. Refund the user's balance when that callback arrives. If the trade was never dispatched to a supplier at all, the whole trade goes to `canceled` and the entire lock is returned in one go.

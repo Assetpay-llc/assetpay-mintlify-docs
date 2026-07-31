@@ -193,7 +193,11 @@ A user can cancel a withdrawal item that hasn't been delivered yet — for examp
 
 Cancellation is **CS2 (Assetpay) only** — Rust withdrawals use a polling supplier with no cancel API. An item can only be cancelled when it is at least **30 minutes old** and not yet in a terminal state (`completed`, `failed`, `reverted`, `canceled`); otherwise you'll get `TRADE_CANCEL_TOO_SOON` (27) or `TRADE_NOT_CANCELLABLE` (28).
 
-A successful response only confirms the marketplace accepted the cancel — AssetPay doesn't change the item state inline. The item transitions to `reverted` and your merchant wallet is refunded asynchronously via the usual callback, exactly like a [trade reversal](#trade-reversals). Refund the user's balance when you receive that `reverted` callback. See the [API reference](/api-reference/trading/cancel-withdraw-item) for the full contract.
+A successful response only confirms the marketplace accepted the cancel — AssetPay doesn't change the item state inline. The item transitions to `canceled` and your merchant wallet is refunded asynchronously via the usual callback. Refund the user's balance when you receive that `canceled` callback. See the [API reference](/api-reference/trading/cancel-withdraw-item) for the full contract.
+
+<Note>
+A cancel lands on `canceled`, not `reverted`. `reverted` means a delivered item came back afterwards (see [Trade Reversals](#trade-reversals)) — a different situation with the same refund shape.
+</Note>
 
 ## Automatic cancellation
 
@@ -212,7 +216,7 @@ Two things to know about the timing:
 - The marketplace refuses cancels on items younger than 30 minutes, so `autoCancel: 30` fires a few minutes later than the literal deadline. Values below 30 are rejected.
 - Only items still undelivered when the timer fires are cancelled. Anything already delivered is untouched, so a partly-filled trade keeps what it received.
 
-Cancelled items behave exactly like a [manual item cancel](#cancelling-a-withdrawal-item): the item moves to `reverted` and the refund reaches your wallet asynchronously through the standard callback. Refund the user's balance when that callback arrives. If the trade was never dispatched to a supplier at all, the whole trade is cancelled and the entire lock is returned in one go.
+Cancelled items behave exactly like a [manual item cancel](#cancelling-a-withdrawal-item): the item moves to `canceled` and the refund reaches your wallet asynchronously through the standard callback. Refund the user's balance when that callback arrives. If the trade was never dispatched to a supplier at all, the whole trade goes to `canceled` and the entire lock is returned in one go.
 
 ## Per-Item Status
 

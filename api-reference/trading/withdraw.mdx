@@ -35,6 +35,7 @@ Authorization: CLIENT_TOKEN
 | `items[].itemId` | string | Yes | Specific listing ID from `/client/market/item` (the `id` field of a listing — a UUIDv8 for CS2, compound for Rust). 5–256 chars. |
 | `items[].price` | number | Yes | Purchase price in USD (max \$100,000). Must equal the current price returned by `/client/market/item`. |
 | `game` | string | No | `"730"` or `"252490"`. Defaults to `"730"`. |
+| `autoCancel` | number | No | **CS2 only.** Minutes after creation to automatically cancel any item still undelivered. Integer, 30-720. Defaults to `120`; send `720` to disable. Rejected on Rust with `VALIDATION_FAILED`. See [Automatic cancellation](/guides/withdrawals#automatic-cancellation). |
 | `externalId` | string | No | Your unique tracking ID (max 128 chars). Must be unique per trade. |
 
 ## Response

@@ -1,6 +1,6 @@
 ---
 title: "Cancel Buy Item (Self-Trade)"
-description: "Cancel a single undelivered item from a merchant self-trade buy (CS2 / Assetpay only)."
+description: "Request cancellation of a single undelivered item from a merchant buy; the merchant wallet is refunded automatically on success. CS2 and AssetPay only."
 ---
 
 Merchant-facing equivalent of [`POST /client/trading/withdraw/{tradeId}/items/{itemId}/cancel`](/api-reference/trading/cancel-withdraw-item). Requests cancellation of a single undelivered item from one of your own **self-trade** buys. AssetPay asks the marketplace supplier to cancel the purchase; on success your merchant wallet is refunded automatically.

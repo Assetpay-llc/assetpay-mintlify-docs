@@ -1,6 +1,6 @@
 ---
 title: "Get Self-Trade(s)"
-description: "Fetch one or more merchant self-trades by trade id or your externalId."
+description: "Fetch one merchant self-trade by internal trade id or by the externalId you supplied at creation. Scoped to the calling merchant’s own trades."
 ---
 
 Returns trades initiated via `/secure/sell` or `/secure/buy`. `tradeId` accepts either the internal trade id or the `externalId` you supplied at creation. Scoped to the calling merchant — another merchant's trade or a `client`-source trade is treated as not found.

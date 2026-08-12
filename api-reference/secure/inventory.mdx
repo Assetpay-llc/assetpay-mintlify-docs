@@ -1,6 +1,6 @@
 ---
 title: "Get Inventory (Self-Trade)"
-description: "Fetch any Steam account's inventory by trade URL."
+description: "Fetch any Steam account's inventory straight from its trade URL, authenticated by merchant API key with no separate client-authentication step."
 ---
 
 Returns the Steam inventory for the account identified by the supplied `tradeUrl`. There is no client-authentication step on this path — the merchant API key authenticates the call, and the Steam account is derived per-request from the trade URL.

@@ -10,6 +10,14 @@
   "favicon": "/favicon.svg",
   "seo": {
     "indexing": "all",
+    "organization": {
+      "id": "https://assetpay.gg/#organization",
+      "name": "AssetPay",
+      "legalName": "AssetPay Oy",
+      "url": "https://assetpay.gg",
+      "logo": "https://assetpay.gg/logo.svg",
+      "sameAs": ["https://discord.gg/5zgN9FNZaF"]
+    },
     "metatags": {
       "og:type": "website",
       "og:site_name": "AssetPay",

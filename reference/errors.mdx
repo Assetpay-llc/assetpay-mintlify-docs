@@ -112,10 +112,17 @@ Returned by deposit, withdrawal, inventory, and market endpoints.
 | 21 | `TRADE_NOT_FOUND` | 404 | Trade not found |
 | 22 | `INVALID_STATE_TRANSITION` | 409 | Invalid trade state transition |
 | 23 | `INVALID_TRADE_ID` | 400 | Invalid trade ID |
+| 27 | `TRADE_CANCEL_TOO_SOON` | 422 | Item must be at least 30 minutes old before it can be cancelled |
+| 28 | `TRADE_NOT_CANCELLABLE` | 409 | Not cancellable in its current state, or the marketplace refused the cancel |
+| 29 | `ESCROW_NOT_ALLOWED` | 400 | The trade would be held in Steam escrow; the user must enable the Steam Guard Mobile Authenticator |
+| 30 | `INVENTORY_PRIVATE` | 400 | The user's Steam inventory is private or unreachable |
 | 31 | `STEAM_UNAVAILABLE` | 424 | Steam temporarily couldn't serve the request; retry shortly |
 | 32 | `QUICK_BUY_UNSUPPORTED_GAME` | 400 | Quick buy is not available for this game |
 | 33 | `STEAM_RATE_LIMITED` | 424 | Steam is rate-limiting inventory requests; retry shortly |
 | 42 | `INSUFFICIENT_STOCK` | 409 | Requested amount exceeds the available marketplace stock for this listing |
+| 43 | `MIXED_SUPPLIER_TRADE` | 409 | A single trade can't mix items from different suppliers |
+| 44 | `TRADE_CANCEL_UNSUPPORTED` | 409 | The item is Rust or autoseller-sourced, so there is no supplier cancel to call |
+| 45 | `ITEM_OVERSTOCKED` | 409 | We already hold the maximum quantity of one of these items; refresh the inventory and retry |
 
 ## Asynchronous Trade Failure Codes
 

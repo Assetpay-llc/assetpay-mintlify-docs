@@ -1,0 +1,90 @@
+---
+title: "Cancel Withdrawal"
+description: "Cancel every still-undelivered item in a withdrawal in one call; the response reports a per-item outcome and refunds settle asynchronously. CS2 items only."
+---
+
+Requests cancellation of **every still-cancellable item** in a withdrawal, rather than one item at a time. Use it when a user abandons a whole order — a single call replaces a loop over [`POST /client/trading/withdraw/{tradeId}/items/{itemId}/cancel`](/api-reference/trading/cancel-withdraw-item).
+
+**Authentication:** Client Token (`Authorization` header)
+
+<Note>
+CS2 (Assetpay) items only. Rust withdrawals and autoseller-sourced items have no supplier cancel API. If **every** item in the trade is in one of those lanes the call fails with `TRADE_CANCEL_UNSUPPORTED` (44); if only some are, they are simply left out of the result.
+</Note>
+
+## Request
+
+```http
+POST https://api.assetpay.gg/client/trading/withdraw/{tradeId}/cancel
+Authorization: CLIENT_TOKEN
+```
+
+### Path Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `tradeId` | string | Yes | The withdrawal's internal ID, or the `externalId` you supplied at creation. |
+
+## Best effort, not all-or-nothing
+
+The supplier decides which items still qualify, so a **partial result is still a `200`**. Read the body, not the status code:
+
+- `requested` — how many items the supplier considered cancellable at all
+- `cancelled` / `failed` — how those split
+- `items[]` — one row per item the supplier reported on
+
+Items the supplier never considered (already delivered, in Steam hold, Rust, autoseller-sourced) do not appear in `items[]` at all. An item must also be at least **30 minutes old** and not yet terminal; younger items come back as `failed` with `reason: "TRADE_CANCEL_TOO_SOON"`.
+
+## Response
+
+```json
+{
+  "requestId": "...",
+  "success": true,
+  "data": {
+    "tradeId": "trade-uuid",
+    "requested": 3,
+    "cancelled": 2,
+    "failed": 1,
+    "items": [
+      { "itemId": "item-uuid-1", "externalId": "wd_item_a", "status": "cancelled" },
+      { "itemId": "item-uuid-2", "externalId": "wd_item_b", "status": "cancelled" },
+      { "itemId": "item-uuid-3", "externalId": "wd_item_c", "status": "failed", "reason": "TRADE_CANCEL_TOO_SOON" }
+    ]
+  }
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `tradeId` | string (uuid) | The trade's internal ID. |
+| `requested` | integer | Items the supplier considered cancellable. |
+| `cancelled` | integer | How many it accepted. |
+| `failed` | integer | How many it refused. |
+| `items[].itemId` | string | The item's AssetPay ID. |
+| `items[].externalId` | string | Your own reference for the item, when you supplied one. Omitted otherwise. |
+| `items[].status` | string | `"cancelled"` or `"failed"`. |
+| `items[].reason` | string | Stable error key when the cancel was refused — e.g. `TRADE_CANCEL_TOO_SOON`, `TRADE_NOT_CANCELLABLE`. Omitted on success. |
+
+A `cancelled` row only confirms the marketplace **accepted** the cancellation. AssetPay does **not** change item state inline — the refund and the transition to `canceled` arrive asynchronously through the standard `trade.*` [callback](/guides/callbacks). Poll `GET /client/trades/{id}` or rely on callbacks for the final state, and refund the user's balance when you receive the canceled callback.
+
+<Note>
+A cancel lands on `canceled`, not `reverted`. `reverted` is for a delivered item that came back afterwards.
+</Note>
+
+## Rate Limits
+
+| Merchant Status | Limit |
+|----------------|-------|
+| Verified | 60 requests / min |
+| Unverified | 10 requests / min |
+
+Shared across all clients of the same merchant.
+
+## Errors
+
+| Code | Key | When |
+|------|-----|------|
+| 28 | `TRADE_NOT_CANCELLABLE` | The trade is not a withdrawal, or the marketplace refused the request outright. |
+| 44 | `TRADE_CANCEL_UNSUPPORTED` | Every item in the trade is Rust or autoseller-sourced, so none can be cancelled. |
+| 1300 | `FORBIDDEN` | The trade does not belong to the authenticated user. |
+| 2201 | `ITEM_NOT_FOUND` | No trade matches that `tradeId` or `externalId`. |

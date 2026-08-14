@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "AssetPay Public API",
-    "version": "0.7.6",
+    "version": "0.7.8",
     "description": "Public trading API - skin deposits, withdrawals, pricing, client endpoints, and identity verification."
   },
   "servers": [
@@ -1321,7 +1321,12 @@
                             "type": "object",
                             "properties": {
                               "id": {
-                                "type": "string"
+                                "type": "string",
+                                "description": "On CS2 withdraw items this is the listing id you quoted, unchanged for the item's whole life (the delivered assetid arrives under assetId); cancel endpoints accept it alongside your externalId. On inventory and deposit items it is the encoded item id."
+                              },
+                              "externalId": {
+                                "type": "string",
+                                "description": "Your own per-item reference, when you supplied one at buy time. Cancel accepts it in place of id. Omitted on stacked Rust rows, which stand for several items at once."
                               },
                               "assetId": {
                                 "type": "string",
@@ -2093,7 +2098,12 @@
                             "type": "object",
                             "properties": {
                               "id": {
-                                "type": "string"
+                                "type": "string",
+                                "description": "On CS2 withdraw items this is the listing id you quoted, unchanged for the item's whole life (the delivered assetid arrives under assetId); cancel endpoints accept it alongside your externalId. On inventory and deposit items it is the encoded item id."
+                              },
+                              "externalId": {
+                                "type": "string",
+                                "description": "Your own per-item reference, when you supplied one at buy time. Cancel accepts it in place of id. Omitted on stacked Rust rows, which stand for several items at once."
                               },
                               "assetId": {
                                 "type": "string",
@@ -2397,7 +2407,7 @@
                         "autoCancelAt": {
                           "type": "string",
                           "format": "date-time",
-                          "description": "When still-undelivered items will be canceled automatically. Absent when auto-cancel is disabled or for Rust withdrawals."
+                          "description": "When items the seller has not yet sent will be canceled automatically. Items already offered to the user or in Steam hold are never auto-canceled. Absent when auto-cancel is disabled or for Rust withdrawals."
                         },
                         "createdAt": {
                           "type": "string",
@@ -2794,7 +2804,7 @@
     "/secure/buy": {
       "post": {
         "summary": "Buy skins from the marketplace (merchant self-trade)",
-        "description": "Initiates a withdraw-style trade where AssetPay buys the requested listings from the upstream marketplace and delivers them to the supplied tradeUrl. The merchant wallet is debited. Optional `autoCancel` (minutes, 30-720, default 120; 720 disables) cancels still-undelivered items automatically after the period, with refunds settling via the trade webhook. CS2 only.",
+        "description": "Initiates a withdraw-style trade where AssetPay buys the requested listings from the upstream marketplace and delivers them to the supplied tradeUrl. The merchant wallet is debited. Optional `autoCancel` (minutes, 30-720, default 30; 720 disables) cancels still-undelivered items automatically after the period, with refunds settling via the trade webhook. CS2 only.",
         "tags": [
           "Trading"
         ],
@@ -2830,6 +2840,12 @@
                           "exclusiveMinimum": 0,
                           "maximum": 100000,
                           "description": "Highest price you will pay for this item. Overrides slippageBps. Omit to reject any rise above price."
+                        },
+                        "externalId": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 128,
+                          "description": "Your own reference for this item. Cancel accepts it in place of the item id."
                         }
                       },
                       "required": [
@@ -2959,7 +2975,12 @@
                             "type": "object",
                             "properties": {
                               "id": {
-                                "type": "string"
+                                "type": "string",
+                                "description": "On CS2 withdraw items this is the listing id you quoted, unchanged for the item's whole life (the delivered assetid arrives under assetId); cancel endpoints accept it alongside your externalId. On inventory and deposit items it is the encoded item id."
+                              },
+                              "externalId": {
+                                "type": "string",
+                                "description": "Your own per-item reference, when you supplied one at buy time. Cancel accepts it in place of id. Omitted on stacked Rust rows, which stand for several items at once."
                               },
                               "assetId": {
                                 "type": "string",
@@ -3263,7 +3284,7 @@
                         "autoCancelAt": {
                           "type": "string",
                           "format": "date-time",
-                          "description": "When still-undelivered items will be canceled automatically. Absent when auto-cancel is disabled or for Rust withdrawals."
+                          "description": "When items the seller has not yet sent will be canceled automatically. Items already offered to the user or in Steam hold are never auto-canceled. Absent when auto-cancel is disabled or for Rust withdrawals."
                         },
                         "createdAt": {
                           "type": "string",
@@ -3601,7 +3622,7 @@
     "/secure/buy/quick": {
       "post": {
         "summary": "Quick-buy skins from the marketplace (merchant self-trade)",
-        "description": "Buys the N cheapest listings of a single item at or below a per-unit ceiling. Available for CS2 and Rust. Identify the item with either `itemId` or its exact `marketHashName` (itemId wins when both are sent); the per-unit `maxPrice` (fee-inclusive, gross) and `itemId` come from /secure/prices. `amount` is 1-200 and `delivery` is standard or instant. Optionally pin a Doppler `phase` (e.g. 'Ruby') to buy only that phase, priced against the phase floor (not combinable with instant delivery); phase and instant delivery are CS2-only. The trade starts empty and locks the worst-case total; the filled listings (possibly fewer than requested) and the refund of any unfilled / below-ceiling remainder settle asynchronously via the trade webhook. Optional `autoCancel` (minutes, 30-720, default 120; 720 disables) cancels still-undelivered items automatically after the period. CS2 only.",
+        "description": "Buys the N cheapest listings of a single item at or below a per-unit ceiling. Available for CS2 and Rust. Identify the item with either `itemId` or its exact `marketHashName` (itemId wins when both are sent); the per-unit `maxPrice` (fee-inclusive, gross) and `itemId` come from /secure/prices. `amount` is 1-200 and `delivery` is standard or instant. Optionally pin a Doppler `phase` (e.g. 'Ruby') to buy only that phase, priced against the phase floor (not combinable with instant delivery); phase and instant delivery are CS2-only. The trade starts empty and locks the worst-case total; the filled listings (possibly fewer than requested) and the refund of any unfilled / below-ceiling remainder settle asynchronously via the trade webhook. Optional `autoCancel` (minutes, 30-720, default 30; 720 disables) cancels still-undelivered items automatically after the period, with refunds settling via the trade webhook. CS2 only.",
         "tags": [
           "Trading"
         ],
@@ -3673,6 +3694,15 @@
                   "externalId": {
                     "type": "string",
                     "maxLength": 128
+                  },
+                  "externalIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128
+                    },
+                    "description": "Your own reference per requested unit, one per item, applied in order. Must hold exactly `amount` entries. Cancel accepts them in place of the item id."
                   },
                   "tradeUrl": {
                     "type": "string",
@@ -3774,7 +3804,12 @@
                             "type": "object",
                             "properties": {
                               "id": {
-                                "type": "string"
+                                "type": "string",
+                                "description": "On CS2 withdraw items this is the listing id you quoted, unchanged for the item's whole life (the delivered assetid arrives under assetId); cancel endpoints accept it alongside your externalId. On inventory and deposit items it is the encoded item id."
+                              },
+                              "externalId": {
+                                "type": "string",
+                                "description": "Your own per-item reference, when you supplied one at buy time. Cancel accepts it in place of id. Omitted on stacked Rust rows, which stand for several items at once."
                               },
                               "assetId": {
                                 "type": "string",
@@ -4078,7 +4113,7 @@
                         "autoCancelAt": {
                           "type": "string",
                           "format": "date-time",
-                          "description": "When still-undelivered items will be canceled automatically. Absent when auto-cancel is disabled or for Rust withdrawals."
+                          "description": "When items the seller has not yet sent will be canceled automatically. Items already offered to the user or in Steam hold are never auto-canceled. Absent when auto-cancel is disabled or for Rust withdrawals."
                         },
                         "createdAt": {
                           "type": "string",
@@ -4416,7 +4451,7 @@
     "/secure/buy/{tradeId}/items/{itemId}/cancel": {
       "post": {
         "summary": "Cancel an undelivered buy item (merchant self-trade)",
-        "description": "Requests cancellation of a single undelivered item from a merchant self-trade buy. Skinshark (CS2) items only - Rust cannot be cancelled. The item must be at least 30 minutes old and not yet in a terminal state. On success the refund flows back via the trade webhook; the response only confirms the cancellation was accepted.",
+        "description": "Requests cancellation of a single undelivered item from a merchant self-trade buy. Skinshark (CS2) items only - Rust and autoseller-sourced items have no provider cancel and return TRADE_CANCEL_UNSUPPORTED. An item must be at least 30 minutes old and not yet terminal. On success the refund flows back via the trade webhook; the response only confirms the cancellation was accepted.",
         "tags": [
           "Trading"
         ],
@@ -4440,11 +4475,12 @@
           {
             "schema": {
               "type": "string",
-              "format": "uuid",
-              "description": "Inventory item UUID"
+              "minLength": 1,
+              "maxLength": 128,
+              "description": "The item's `id`, or the `externalId` you supplied for it at buy time."
             },
             "required": true,
-            "description": "Inventory item UUID",
+            "description": "The item's `id`, or the `externalId` you supplied for it at buy time.",
             "name": "itemId",
             "in": "path"
           }
@@ -4478,6 +4514,9 @@
                           "type": "string",
                           "format": "uuid"
                         },
+                        "externalId": {
+                          "type": "string"
+                        },
                         "status": {
                           "type": "string",
                           "enum": [
@@ -4489,6 +4528,412 @@
                         "tradeId",
                         "itemId",
                         "status"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - validation failed or invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable error message(s)"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable error message(s)"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable error message(s)"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable error message(s)"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests - rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable error message(s)"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/secure/buy/{tradeId}/cancel": {
+      "post": {
+        "summary": "Cancel every undelivered item in a buy (merchant self-trade)",
+        "description": "Requests cancellation of every still-cancellable item in the trade. Skinshark (CS2) items only - Rust and autoseller-sourced items have no provider cancel and return TRADE_CANCEL_UNSUPPORTED. An item must be at least 30 minutes old and not yet terminal. On success the refund flows back via the trade webhook; the response only confirms the cancellation was accepted. Best effort: a partial result is still a 200, with a per-item status and reason, so check the body rather than the status code.",
+        "tags": [
+          "Trading"
+        ],
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Internal trade id or the externalId supplied at creation."
+            },
+            "required": true,
+            "description": "Internal trade id or the externalId supplied at creation.",
+            "name": "tradeId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Per-item cancellation outcomes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "tradeId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "requested": {
+                          "type": "integer",
+                          "description": "Items the provider considered cancellable"
+                        },
+                        "cancelled": {
+                          "type": "integer"
+                        },
+                        "failed": {
+                          "type": "integer"
+                        },
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "itemId": {
+                                "type": "string"
+                              },
+                              "externalId": {
+                                "type": "string"
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": [
+                                  "cancelled",
+                                  "failed"
+                                ]
+                              },
+                              "reason": {
+                                "type": "string",
+                                "description": "Stable error key when the cancel was refused, e.g. TRADE_CANCEL_TOO_SOON or TRADE_NOT_CANCELLABLE."
+                              }
+                            },
+                            "required": [
+                              "itemId",
+                              "status"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "tradeId",
+                        "requested",
+                        "cancelled",
+                        "failed",
+                        "items"
                       ]
                     }
                   },
@@ -4953,7 +5398,12 @@
                             "type": "object",
                             "properties": {
                               "id": {
-                                "type": "string"
+                                "type": "string",
+                                "description": "On CS2 withdraw items this is the listing id you quoted, unchanged for the item's whole life (the delivered assetid arrives under assetId); cancel endpoints accept it alongside your externalId. On inventory and deposit items it is the encoded item id."
+                              },
+                              "externalId": {
+                                "type": "string",
+                                "description": "Your own per-item reference, when you supplied one at buy time. Cancel accepts it in place of id. Omitted on stacked Rust rows, which stand for several items at once."
                               },
                               "assetId": {
                                 "type": "string",
@@ -5587,7 +6037,12 @@
                         "type": "object",
                         "properties": {
                           "id": {
-                            "type": "string"
+                            "type": "string",
+                            "description": "On CS2 withdraw items this is the listing id you quoted, unchanged for the item's whole life (the delivered assetid arrives under assetId); cancel endpoints accept it alongside your externalId. On inventory and deposit items it is the encoded item id."
+                          },
+                          "externalId": {
+                            "type": "string",
+                            "description": "Your own per-item reference, when you supplied one at buy time. Cancel accepts it in place of id. Omitted on stacked Rust rows, which stand for several items at once."
                           },
                           "assetId": {
                             "type": "string",
@@ -6268,7 +6723,12 @@
                                   "type": "object",
                                   "properties": {
                                     "id": {
-                                      "type": "string"
+                                      "type": "string",
+                                      "description": "On CS2 withdraw items this is the listing id you quoted, unchanged for the item's whole life (the delivered assetid arrives under assetId); cancel endpoints accept it alongside your externalId. On inventory and deposit items it is the encoded item id."
+                                    },
+                                    "externalId": {
+                                      "type": "string",
+                                      "description": "Your own per-item reference, when you supplied one at buy time. Cancel accepts it in place of id. Omitted on stacked Rust rows, which stand for several items at once."
                                     },
                                     "assetId": {
                                       "type": "string",
@@ -6572,7 +7032,7 @@
                               "autoCancelAt": {
                                 "type": "string",
                                 "format": "date-time",
-                                "description": "When still-undelivered items will be canceled automatically. Absent when auto-cancel is disabled or for Rust withdrawals."
+                                "description": "When items the seller has not yet sent will be canceled automatically. Items already offered to the user or in Steam hold are never auto-canceled. Absent when auto-cancel is disabled or for Rust withdrawals."
                               },
                               "createdAt": {
                                 "type": "string",
@@ -6973,7 +7433,12 @@
                                 "type": "object",
                                 "properties": {
                                   "id": {
-                                    "type": "string"
+                                    "type": "string",
+                                    "description": "On CS2 withdraw items this is the listing id you quoted, unchanged for the item's whole life (the delivered assetid arrives under assetId); cancel endpoints accept it alongside your externalId. On inventory and deposit items it is the encoded item id."
+                                  },
+                                  "externalId": {
+                                    "type": "string",
+                                    "description": "Your own per-item reference, when you supplied one at buy time. Cancel accepts it in place of id. Omitted on stacked Rust rows, which stand for several items at once."
                                   },
                                   "assetId": {
                                     "type": "string",
@@ -7277,7 +7742,7 @@
                             "autoCancelAt": {
                               "type": "string",
                               "format": "date-time",
-                              "description": "When still-undelivered items will be canceled automatically. Absent when auto-cancel is disabled or for Rust withdrawals."
+                              "description": "When items the seller has not yet sent will be canceled automatically. Items already offered to the user or in Steam hold are never auto-canceled. Absent when auto-cancel is disabled or for Rust withdrawals."
                             },
                             "createdAt": {
                               "type": "string",
@@ -7373,7 +7838,12 @@
                                   "type": "object",
                                   "properties": {
                                     "id": {
-                                      "type": "string"
+                                      "type": "string",
+                                      "description": "On CS2 withdraw items this is the listing id you quoted, unchanged for the item's whole life (the delivered assetid arrives under assetId); cancel endpoints accept it alongside your externalId. On inventory and deposit items it is the encoded item id."
+                                    },
+                                    "externalId": {
+                                      "type": "string",
+                                      "description": "Your own per-item reference, when you supplied one at buy time. Cancel accepts it in place of id. Omitted on stacked Rust rows, which stand for several items at once."
                                     },
                                     "assetId": {
                                       "type": "string",
@@ -7677,7 +8147,7 @@
                               "autoCancelAt": {
                                 "type": "string",
                                 "format": "date-time",
-                                "description": "When still-undelivered items will be canceled automatically. Absent when auto-cancel is disabled or for Rust withdrawals."
+                                "description": "When items the seller has not yet sent will be canceled automatically. Items already offered to the user or in Steam hold are never auto-canceled. Absent when auto-cancel is disabled or for Rust withdrawals."
                               },
                               "createdAt": {
                                 "type": "string",
@@ -8087,7 +8557,12 @@
                             "type": "object",
                             "properties": {
                               "id": {
-                                "type": "string"
+                                "type": "string",
+                                "description": "On CS2 withdraw items this is the listing id you quoted, unchanged for the item's whole life (the delivered assetid arrives under assetId); cancel endpoints accept it alongside your externalId. On inventory and deposit items it is the encoded item id."
+                              },
+                              "externalId": {
+                                "type": "string",
+                                "description": "Your own per-item reference, when you supplied one at buy time. Cancel accepts it in place of id. Omitted on stacked Rust rows, which stand for several items at once."
                               },
                               "assetId": {
                                 "type": "string",
@@ -8787,7 +9262,12 @@
                                   "type": "object",
                                   "properties": {
                                     "id": {
-                                      "type": "string"
+                                      "type": "string",
+                                      "description": "On CS2 withdraw items this is the listing id you quoted, unchanged for the item's whole life (the delivered assetid arrives under assetId); cancel endpoints accept it alongside your externalId. On inventory and deposit items it is the encoded item id."
+                                    },
+                                    "externalId": {
+                                      "type": "string",
+                                      "description": "Your own per-item reference, when you supplied one at buy time. Cancel accepts it in place of id. Omitted on stacked Rust rows, which stand for several items at once."
                                     },
                                     "assetId": {
                                       "type": "string",
@@ -9091,7 +9571,7 @@
                               "autoCancelAt": {
                                 "type": "string",
                                 "format": "date-time",
-                                "description": "When still-undelivered items will be canceled automatically. Absent when auto-cancel is disabled or for Rust withdrawals."
+                                "description": "When items the seller has not yet sent will be canceled automatically. Items already offered to the user or in Steam hold are never auto-canceled. Absent when auto-cancel is disabled or for Rust withdrawals."
                               },
                               "createdAt": {
                                 "type": "string",
@@ -9901,7 +10381,12 @@
                             "type": "object",
                             "properties": {
                               "id": {
-                                "type": "string"
+                                "type": "string",
+                                "description": "On CS2 withdraw items this is the listing id you quoted, unchanged for the item's whole life (the delivered assetid arrives under assetId); cancel endpoints accept it alongside your externalId. On inventory and deposit items it is the encoded item id."
+                              },
+                              "externalId": {
+                                "type": "string",
+                                "description": "Your own per-item reference, when you supplied one at buy time. Cancel accepts it in place of id. Omitted on stacked Rust rows, which stand for several items at once."
                               },
                               "assetId": {
                                 "type": "string",
@@ -10535,7 +11020,12 @@
                         "type": "object",
                         "properties": {
                           "id": {
-                            "type": "string"
+                            "type": "string",
+                            "description": "On CS2 withdraw items this is the listing id you quoted, unchanged for the item's whole life (the delivered assetid arrives under assetId); cancel endpoints accept it alongside your externalId. On inventory and deposit items it is the encoded item id."
+                          },
+                          "externalId": {
+                            "type": "string",
+                            "description": "Your own per-item reference, when you supplied one at buy time. Cancel accepts it in place of id. Omitted on stacked Rust rows, which stand for several items at once."
                           },
                           "assetId": {
                             "type": "string",
@@ -11225,7 +11715,12 @@
                             "type": "object",
                             "properties": {
                               "id": {
-                                "type": "string"
+                                "type": "string",
+                                "description": "On CS2 withdraw items this is the listing id you quoted, unchanged for the item's whole life (the delivered assetid arrives under assetId); cancel endpoints accept it alongside your externalId. On inventory and deposit items it is the encoded item id."
+                              },
+                              "externalId": {
+                                "type": "string",
+                                "description": "Your own per-item reference, when you supplied one at buy time. Cancel accepts it in place of id. Omitted on stacked Rust rows, which stand for several items at once."
                               },
                               "assetId": {
                                 "type": "string",
@@ -11529,7 +12024,7 @@
                         "autoCancelAt": {
                           "type": "string",
                           "format": "date-time",
-                          "description": "When still-undelivered items will be canceled automatically. Absent when auto-cancel is disabled or for Rust withdrawals."
+                          "description": "When items the seller has not yet sent will be canceled automatically. Items already offered to the user or in Steam hold are never auto-canceled. Absent when auto-cancel is disabled or for Rust withdrawals."
                         },
                         "createdAt": {
                           "type": "string",
@@ -11608,7 +12103,12 @@
                                   "type": "object",
                                   "properties": {
                                     "id": {
-                                      "type": "string"
+                                      "type": "string",
+                                      "description": "On CS2 withdraw items this is the listing id you quoted, unchanged for the item's whole life (the delivered assetid arrives under assetId); cancel endpoints accept it alongside your externalId. On inventory and deposit items it is the encoded item id."
+                                    },
+                                    "externalId": {
+                                      "type": "string",
+                                      "description": "Your own per-item reference, when you supplied one at buy time. Cancel accepts it in place of id. Omitted on stacked Rust rows, which stand for several items at once."
                                     },
                                     "assetId": {
                                       "type": "string",
@@ -11912,7 +12412,7 @@
                               "autoCancelAt": {
                                 "type": "string",
                                 "format": "date-time",
-                                "description": "When still-undelivered items will be canceled automatically. Absent when auto-cancel is disabled or for Rust withdrawals."
+                                "description": "When items the seller has not yet sent will be canceled automatically. Items already offered to the user or in Steam hold are never auto-canceled. Absent when auto-cancel is disabled or for Rust withdrawals."
                               },
                               "createdAt": {
                                 "type": "string",
@@ -12269,7 +12769,7 @@
     "/client/trading/withdraw": {
       "post": {
         "summary": "Initiate a skin withdrawal",
-        "description": "Initiates a withdrawal trade where the client receives skins from the platform. Each item must include the itemId from the prices endpoint and the agreed price (USD). Maximum 50 items per withdrawal. Price is validated against current offers. Optional `autoCancel` (minutes, 30-720, default 120; 720 disables) cancels still-undelivered items automatically after the period, with refunds settling via the trade webhook. CS2 only.",
+        "description": "Initiates a withdrawal trade where the client receives skins from the platform. Each item must include the itemId from the prices endpoint and the agreed price (USD). Maximum 50 items per withdrawal. Price is validated against current offers. Optional `autoCancel` (minutes, 30-720, default 30; 720 disables) cancels still-undelivered items automatically after the period, with refunds settling via the trade webhook. CS2 only.",
         "tags": [
           "Withdrawals"
         ],
@@ -12305,6 +12805,12 @@
                           "exclusiveMinimum": 0,
                           "maximum": 100000,
                           "description": "Highest price you will pay for this item. Overrides slippageBps. Omit to reject any rise above price."
+                        },
+                        "externalId": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 128,
+                          "description": "Your own reference for this item. Cancel accepts it in place of the item id."
                         }
                       },
                       "required": [
@@ -12429,7 +12935,12 @@
                             "type": "object",
                             "properties": {
                               "id": {
-                                "type": "string"
+                                "type": "string",
+                                "description": "On CS2 withdraw items this is the listing id you quoted, unchanged for the item's whole life (the delivered assetid arrives under assetId); cancel endpoints accept it alongside your externalId. On inventory and deposit items it is the encoded item id."
+                              },
+                              "externalId": {
+                                "type": "string",
+                                "description": "Your own per-item reference, when you supplied one at buy time. Cancel accepts it in place of id. Omitted on stacked Rust rows, which stand for several items at once."
                               },
                               "assetId": {
                                 "type": "string",
@@ -12733,7 +13244,7 @@
                         "autoCancelAt": {
                           "type": "string",
                           "format": "date-time",
-                          "description": "When still-undelivered items will be canceled automatically. Absent when auto-cancel is disabled or for Rust withdrawals."
+                          "description": "When items the seller has not yet sent will be canceled automatically. Items already offered to the user or in Steam hold are never auto-canceled. Absent when auto-cancel is disabled or for Rust withdrawals."
                         },
                         "createdAt": {
                           "type": "string",
@@ -13012,7 +13523,7 @@
     "/client/trading/withdraw/quick": {
       "post": {
         "summary": "Initiate a quick skin withdrawal",
-        "description": "Buys the N cheapest listings of a single item at or below a per-unit ceiling, instead of naming specific listings. Available for CS2 and Rust. Identify the item with either `itemId` or its exact `marketHashName` (itemId wins when both are sent); the per-unit `maxPrice` (fee-inclusive, gross) and `itemId` come from /secure/prices. `amount` is the quantity (1-200) and `delivery` is standard or instant. Optionally pin a Doppler `phase` (e.g. 'Ruby') to buy only that phase, priced against the phase floor (not combinable with instant delivery); phase and instant delivery are CS2-only. The trade starts empty and locks the worst-case total; the filled listings (which may be fewer than requested) and the refund of any unfilled / below-ceiling remainder settle asynchronously via the trade webhook. Optional `autoCancel` (minutes, 30-720, default 120; 720 disables) cancels still-undelivered items automatically after the period. CS2 only.",
+        "description": "Buys the N cheapest listings of a single item at or below a per-unit ceiling, instead of naming specific listings. Available for CS2 and Rust. Identify the item with either `itemId` or its exact `marketHashName` (itemId wins when both are sent); the per-unit `maxPrice` (fee-inclusive, gross) and `itemId` come from /secure/prices. `amount` is the quantity (1-200) and `delivery` is standard or instant. Optionally pin a Doppler `phase` (e.g. 'Ruby') to buy only that phase, priced against the phase floor (not combinable with instant delivery); phase and instant delivery are CS2-only. The trade starts empty and locks the worst-case total; the filled listings (which may be fewer than requested) and the refund of any unfilled / below-ceiling remainder settle asynchronously via the trade webhook. Optional `autoCancel` (minutes, 30-720, default 30; 720 disables) cancels still-undelivered items automatically after the period, with refunds settling via the trade webhook. CS2 only.",
         "tags": [
           "Withdrawals"
         ],
@@ -13084,6 +13595,15 @@
                   "externalId": {
                     "type": "string",
                     "maxLength": 128
+                  },
+                  "externalIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128
+                    },
+                    "description": "Your own reference per requested unit, one per item, applied in order. Must hold exactly `amount` entries. Cancel accepts them in place of the item id."
                   }
                 },
                 "required": [
@@ -13180,7 +13700,12 @@
                             "type": "object",
                             "properties": {
                               "id": {
-                                "type": "string"
+                                "type": "string",
+                                "description": "On CS2 withdraw items this is the listing id you quoted, unchanged for the item's whole life (the delivered assetid arrives under assetId); cancel endpoints accept it alongside your externalId. On inventory and deposit items it is the encoded item id."
+                              },
+                              "externalId": {
+                                "type": "string",
+                                "description": "Your own per-item reference, when you supplied one at buy time. Cancel accepts it in place of id. Omitted on stacked Rust rows, which stand for several items at once."
                               },
                               "assetId": {
                                 "type": "string",
@@ -13484,7 +14009,7 @@
                         "autoCancelAt": {
                           "type": "string",
                           "format": "date-time",
-                          "description": "When still-undelivered items will be canceled automatically. Absent when auto-cancel is disabled or for Rust withdrawals."
+                          "description": "When items the seller has not yet sent will be canceled automatically. Items already offered to the user or in Steam hold are never auto-canceled. Absent when auto-cancel is disabled or for Rust withdrawals."
                         },
                         "createdAt": {
                           "type": "string",
@@ -13763,7 +14288,7 @@
     "/client/trading/withdraw/{tradeId}/items/{itemId}/cancel": {
       "post": {
         "summary": "Cancel an undelivered withdrawal item",
-        "description": "Requests cancellation of a single undelivered withdrawal item. Skinshark (CS2) items only - Rust withdrawals cannot be cancelled. The item must be at least 30 minutes old and not yet in a terminal state. On success the refund flows back via the trade webhook; the response only confirms the cancellation was accepted.",
+        "description": "Requests cancellation of a single undelivered withdrawal item. Skinshark (CS2) items only - Rust and autoseller-sourced items have no provider cancel and return TRADE_CANCEL_UNSUPPORTED. An item must be at least 30 minutes old and not yet terminal. On success the refund flows back via the trade webhook; the response only confirms the cancellation was accepted.",
         "tags": [
           "Withdrawals"
         ],
@@ -13787,11 +14312,12 @@
           {
             "schema": {
               "type": "string",
-              "format": "uuid",
-              "description": "Inventory item UUID"
+              "minLength": 1,
+              "maxLength": 128,
+              "description": "The item's `id`, or the `externalId` you supplied for it at buy time."
             },
             "required": true,
-            "description": "Inventory item UUID",
+            "description": "The item's `id`, or the `externalId` you supplied for it at buy time.",
             "name": "itemId",
             "in": "path"
           }
@@ -13825,6 +14351,9 @@
                           "type": "string",
                           "format": "uuid"
                         },
+                        "externalId": {
+                          "type": "string"
+                        },
                         "status": {
                           "type": "string",
                           "enum": [
@@ -13836,6 +14365,412 @@
                         "tradeId",
                         "itemId",
                         "status"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - validation failed or invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable error message(s)"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable error message(s)"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable error message(s)"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable error message(s)"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests - rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code (see error-codes.ts)"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "Machine-readable error key"
+                        },
+                        "message": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ],
+                          "description": "Human-readable error message(s)"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "key",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "success",
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/client/trading/withdraw/{tradeId}/cancel": {
+      "post": {
+        "summary": "Cancel every undelivered item in a withdrawal",
+        "description": "Requests cancellation of every still-cancellable item in the trade. Skinshark (CS2) items only - Rust and autoseller-sourced items have no provider cancel and return TRADE_CANCEL_UNSUPPORTED. An item must be at least 30 minutes old and not yet terminal. On success the refund flows back via the trade webhook; the response only confirms the cancellation was accepted. Best effort: a partial result is still a 200, with a per-item status and reason, so check the body rather than the status code.",
+        "tags": [
+          "Withdrawals"
+        ],
+        "security": [
+          {
+            "ClientToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Internal trade id or the externalId supplied at creation."
+            },
+            "required": true,
+            "description": "Internal trade id or the externalId supplied at creation.",
+            "name": "tradeId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Per-item cancellation outcomes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string",
+                      "description": "Unique request identifier"
+                    },
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "tradeId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "requested": {
+                          "type": "integer",
+                          "description": "Items the provider considered cancellable"
+                        },
+                        "cancelled": {
+                          "type": "integer"
+                        },
+                        "failed": {
+                          "type": "integer"
+                        },
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "itemId": {
+                                "type": "string"
+                              },
+                              "externalId": {
+                                "type": "string"
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": [
+                                  "cancelled",
+                                  "failed"
+                                ]
+                              },
+                              "reason": {
+                                "type": "string",
+                                "description": "Stable error key when the cancel was refused, e.g. TRADE_CANCEL_TOO_SOON or TRADE_NOT_CANCELLABLE."
+                              }
+                            },
+                            "required": [
+                              "itemId",
+                              "status"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "tradeId",
+                        "requested",
+                        "cancelled",
+                        "failed",
+                        "items"
                       ]
                     }
                   },

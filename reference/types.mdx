@@ -44,6 +44,9 @@ interface Trade {
   // Timing
   holdEndDate?: Date;            // When the Steam hold expires (present from "hold" onward)
   activeAt?: Date;               // When the trade offer went live at the user (present from "active" onward)
+  autoCancelAt?: Date;           // When items the seller hasn't sent will be canceled automatically.
+                                 //   Items already offered to the user or in Steam hold are never
+                                 //   auto-canceled. Absent when auto-cancel is off, and on Rust.
   createdAt: Date;
   updatedAt: Date;
 
@@ -69,7 +72,15 @@ Represents a skin item in inventory, market, or trade responses. Some fields are
 ```typescript
 interface Item {
   // Identity
-  id: string;                    // Encoded item ID
+  id: string;                    // On CS2 withdraw items, the listing id you quoted — stable for the
+                                 //   item's whole life. On inventory and deposit items, the encoded
+                                 //   item id. Cancel endpoints accept it alongside externalId.
+  externalId?: string;           // Your own per-item reference, when you supplied one at buy time.
+                                 //   Cancel accepts it in place of id. Omitted on stacked Rust rows,
+                                 //   which stand for several items at once.
+  assetId?: string;              // Raw Steam assetid. Always present on inventory listings and deposit
+                                 //   items; omitted on withdraw items until the item lands in the
+                                 //   recipient's Steam inventory.
   appid: number;                 // Game app ID (730 or 252490)
 
   // Description — omitted on bare withdraw items where AssetPay has no Steam-side

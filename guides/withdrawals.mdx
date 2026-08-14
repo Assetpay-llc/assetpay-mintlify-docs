@@ -58,6 +58,7 @@ Authorization: CLIENT_TOKEN
 | `items[].itemId` | string | Yes | Item ID from the market response |
 | `items[].price` | number | Yes | Purchase price in USD (max \$100,000). Validated against the current marketplace price. |
 | `items[].amount` | number | No | Quantity for stackable items (default: 1, max: 10000) |
+| `items[].externalId` | string | No | Your own reference for this single item (1–128 chars). Echoed back on the item and accepted in place of the item id when cancelling. |
 | `game` | string | No | `"730"` (CS2) or `"252490"` (Rust). Defaults to `"730"`. |
 | `autoCancel` | number | No | CS2 only. Minutes until undelivered items are cancelled automatically (30-720, default 30, `720` disables). See [Automatic cancellation](#automatic-cancellation). |
 | `externalId` | string | No | Your unique tracking ID (max 128 chars) |
@@ -187,13 +188,34 @@ Authorization: CLIENT_TOKEN
 
 Everything else — the `initiated` approval callback, balance locking, per-item status — works exactly like the standard withdrawal. See the API reference for [`POST /client/trading/withdraw/quick`](/api-reference/trading/withdraw-quick) (and the merchant self-trade variant [`POST /secure/buy/quick`](/api-reference/secure/buy-quick)).
 
-## Cancelling a Withdrawal Item
+Because the rows are placeholders until they bind, they all share the catalog `itemId` and are hard to tell apart. Pass an `externalIds` array — one entry per requested unit, exactly `amount` of them, applied in order — to label them yourself; each row carries its `externalId` from creation, and cancelling accepts it in place of the item id.
 
-A user can cancel a withdrawal item that hasn't been delivered yet — for example when a CS2 purchase is taking too long to source. Call `POST /client/trading/withdraw/{tradeId}/items/{itemId}/cancel` with the trade ID and the item's `id`.
+## Tracking individual items
 
-Cancellation is **CS2 (Assetpay) only** — Rust withdrawals use a polling supplier with no cancel API. An item can only be cancelled when it is at least **30 minutes old** and not yet in a terminal state (`completed`, `failed`, `reverted`, `canceled`); otherwise you'll get `TRADE_CANCEL_TOO_SOON` (27) or `TRADE_NOT_CANCELLABLE` (28).
+Alongside the trade-level `externalId`, every item can carry one of its own. On a standard withdrawal set `items[].externalId`; on a quick withdrawal pass the `externalIds` array. Each is 1–128 characters.
 
-A successful response only confirms the marketplace accepted the cancel — AssetPay doesn't change the item state inline. The item transitions to `canceled` and your merchant wallet is refunded asynchronously via the usual callback. Refund the user's balance when you receive that `canceled` callback. See the [API reference](/api-reference/trading/cancel-withdraw-item) for the full contract.
+It comes back on the item in every trade response and callback, and both cancel endpoints accept it wherever an item id is expected — so you can cancel using your own reference without first mapping it to an AssetPay ID.
+
+<Note>
+Stacked Rust rows stand for several items at once and carry no `externalId`.
+</Note>
+
+## Cancelling a Withdrawal
+
+A user can cancel a withdrawal that hasn't been delivered yet — for example when a CS2 purchase is taking too long to source. There are two endpoints, and which one you want depends on whether the user is abandoning one item or the whole order:
+
+| Call | Endpoint | Result |
+|------|----------|--------|
+| One item | `POST /client/trading/withdraw/{tradeId}/items/{itemId}/cancel` | Cancels that item, or fails with a reason |
+| The whole order | `POST /client/trading/withdraw/{tradeId}/cancel` | Cancels everything still cancellable, reporting each item |
+
+Both accept your own references in place of AssetPay IDs: the trade's `externalId` for `{tradeId}`, and an item's `externalId` for `{itemId}`.
+
+Cancellation is **CS2 (Assetpay) only**, and only for items AssetPay sourced itself — Rust withdrawals use a polling supplier with no cancel API, and autoseller-sourced items leave nothing to reverse upstream. Both come back as `TRADE_CANCEL_UNSUPPORTED` (44). An item can also only be cancelled when it is at least **30 minutes old** and not yet in a terminal state (`completed`, `failed`, `reverted`, `canceled`); otherwise you'll get `TRADE_CANCEL_TOO_SOON` (27) or `TRADE_NOT_CANCELLABLE` (28).
+
+The whole-order call is **best effort**, so a partial result is still a `200` — read the body rather than the status code. `requested` is how many items the supplier considered cancellable at all, `cancelled` and `failed` split those, and each entry in `items[]` carries a `status` plus a `reason` when it was refused. Items the supplier never considered — already delivered, in Steam hold, Rust, autoseller-sourced — simply don't appear.
+
+A successful response only confirms the marketplace accepted the cancel — AssetPay doesn't change the item state inline. Items transition to `canceled` and your merchant wallet is refunded asynchronously via the usual callback. Refund the user's balance when you receive that `canceled` callback. See the API reference for [one item](/api-reference/trading/cancel-withdraw-item) or [the whole order](/api-reference/trading/cancel-withdrawal).
 
 <Note>
 A cancel lands on `canceled`, not `reverted`. `reverted` means a delivered item came back afterwards (see [Trade Reversals](#trade-reversals)) — a different situation with the same refund shape.
@@ -201,12 +223,12 @@ A cancel lands on `canceled`, not `reverted`. `reverted` means a delivered item 
 
 ## Automatic cancellation
 
-CS2 withdrawals can also cancel themselves. Every withdraw and quick withdraw accepts an optional `autoCancel` field: the number of minutes after creation at which AssetPay cancels anything still undelivered, so an item that never sources does not sit open indefinitely.
+CS2 withdrawals can also cancel themselves. Every withdraw and quick withdraw accepts an optional `autoCancel` field: the number of minutes after creation at which AssetPay cancels anything the seller has not sent yet, so an item that never sources does not sit open indefinitely.
 
 | Value | Behaviour |
 |-------|-----------|
 | omitted | Defaults to `30`, the shortest window the marketplace allows |
-| `30`-`719` | Cancel still-undelivered items after that many minutes |
+| `30`-`719` | Cancel items the seller hasn't sent after that many minutes |
 | `720` | Disabled. The trade stays open until it settles or you cancel it yourself |
 
 Rust is not supported: its supplier has no cancel API, so sending `autoCancel` on a Rust trade is rejected with `VALIDATION_FAILED` (1001).
@@ -214,9 +236,11 @@ Rust is not supported: its supplier has no cancel API, so sending `autoCancel` o
 Two things to know about the timing:
 
 - The marketplace refuses cancels on items younger than 30 minutes, so the 30-minute default lands a few minutes past the literal deadline rather than exactly on it. Values below 30 are rejected.
-- Only items still undelivered when the timer fires are cancelled. Anything already delivered is untouched, so a partly-filled trade keeps what it received.
+- Only items the seller has not yet sent are cancelled. Anything already offered to the user or sitting in a Steam hold is never auto-cancelled, so a partly-filled trade keeps what it received.
 
-Cancelled items behave exactly like a [manual item cancel](#cancelling-a-withdrawal-item): the item moves to `canceled` and the refund reaches your wallet asynchronously through the standard callback. Refund the user's balance when that callback arrives. If the trade was never dispatched to a supplier at all, the whole trade goes to `canceled` and the entire lock is returned in one go.
+The trade's `autoCancelAt` field carries the moment the timer fires. It is absent when auto-cancel is disabled, and on Rust withdrawals.
+
+Cancelled items behave exactly like a [manual cancel](#cancelling-a-withdrawal): the item moves to `canceled` and the refund reaches your wallet asynchronously through the standard callback. Refund the user's balance when that callback arrives. If the trade was never dispatched to a supplier at all, the whole trade goes to `canceled` and the entire lock is returned in one go.
 
 ## Per-Item Status
 

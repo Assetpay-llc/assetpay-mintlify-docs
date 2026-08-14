@@ -33,6 +33,7 @@ Authorization: CLIENT_TOKEN
 | `marketHashName` | string | Yes\* | Exact market hash name (e.g. `AK-47 \| Redline (Field-Tested)`), resolved to the item. Ignored when `itemId` is supplied. |
 | `maxPrice` | number | Yes | **Gross** per-unit price ceiling in USD (fee-inclusive — the same basis as the `withdraw` price in `/secure/prices`). Max \$100,000. AssetPay backs its fee out of this to get the sourcing ceiling sent to the marketplace. |
 | `amount` | number | Yes | How many units to buy. Integer, 1–200. |
+| `externalIds` | array | No | One reference of your own per requested unit (each 1–128 chars), applied to the pre-filled rows in order. Must hold **exactly** `amount` entries. Accepted in place of the item id by both [cancel](/api-reference/trading/cancel-withdraw-item) endpoints. |
 | `delivery` | string | No | `"standard"` or `"instant"`. Defaults to `"standard"`. `"instant"` is CS2-only. |
 | `phase` | string | No | **CS2 only.** Doppler phase to buy: `"Phase 1"`–`"Phase 4"`, `"Ruby"`, `"Sapphire"`, `"Black Pearl"`, `"Emerald"`. Prices against that phase's floor. **Cannot be combined with `delivery: "instant"`** (rejected with `VALIDATION_FAILED`). |
 | `game` | string | No | `"730"` (CS2) or `"252490"` (Rust). Defaults to `"730"`. |

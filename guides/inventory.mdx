@@ -79,7 +79,7 @@ Response:
 
 Each item can have two price fields, and they mean different things:
 
-- **`marketPrice`** is the market reference price in USD. This is not what the user gets paid. Use it to show market value context in your UI.
+- **`marketPrice`** is the market reference price in USD. This is not what the user gets paid. Use it to show market value context in your UI. It reflects live multi-marketplace data — order books, liquidity and realized sales aggregated by [cs2.sh](https://cs2.sh) — run through AssetPay's fair-value model.
 - **`offer.price`** is the actual amount in USD the user will receive for depositing this item. This is the number that matters for your balance calculations.
 - **`offer.reference`** is an opaque marketplace identifier. AssetPay uses it internally; you don't need to pass it back.
 

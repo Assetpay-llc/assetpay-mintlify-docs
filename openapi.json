@@ -5362,8 +5362,7 @@
             "schema": {
               "type": "string",
               "enum": [
-                "internal",
-                "skinshark"
+                "internal"
               ]
             },
             "required": false,

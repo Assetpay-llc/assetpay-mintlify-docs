@@ -1,16 +1,16 @@
 ---
 title: "Price Feed (Redis)"
-description: "Tail the AssetPay price feed over Redis Streams instead of polling: connection, access tiers, stream keys, event format, and snapshot-then-tail consumption."
+description: "Tail the AssetPay price feed over Redis Streams instead of polling: connection, stream keys, event format, and snapshot-then-tail consumption."
 ---
 
 ## Overview
 
-The AssetPay **price feed** is a low-latency firehose of item and price changes, delivered over **Redis Streams** at `feed.assetpay.gg`. Instead of polling the REST API, you tail a stream and react to each change as it happens - items entering the pool, items leaving, and price updates per marketplace.
+The AssetPay **price feed** is a low-latency stream of item and price changes, delivered over **Redis Streams** at `feed.assetpay.gg`. Instead of polling the REST API, you tail a stream and react to each change as it happens - items entering the pool, items leaving, and price updates.
 
 Each consumer reads a **snapshot** of current state once, then **tails the stream** for incremental changes. If you fall behind or reconnect, you re-read the snapshot and resume - no events are lost.
 
 <Note>
-The Redis feed carries raw supplier prices and requires separately provisioned credentials. If you only need your own priced view of the market (the same items `/secure/market?source=internal` returns, with your fee applied), the WebSocket [Market Updates](/guides/websocket#market-updates) event covers that with just your API key.
+The feed requires separately provisioned credentials. If you only need your own priced view of the market (the same items `/secure/market?source=internal` returns, with your fee applied), the WebSocket [Market Updates](/guides/websocket#market-updates) event covers that with just your API key.
 </Note>
 
 ## Connection
@@ -27,30 +27,16 @@ The feed is TLS-encrypted with a private CA. To connect you need:
 The feed is a raw Redis (TCP) endpoint, so `feed.assetpay.gg` resolves directly to the origin - it is not proxied like the HTTP API.
 </Note>
 
-### Access tiers
-
-Your ACL user determines which keys you can read at all - anything outside your scope returns `NOPERM`.
-
-| ACL user | Sees | Use case |
-|----------|------|----------|
-| Per-market tenant (e.g. `waxpeer`, `ecosteam`) | That one market's stream + snapshot only | A single-marketplace tenant - you never see another market's prices |
-| `market` | Every per-market stream (`autoseller:items:feed:*`) | An aggregator that wants each market separately |
-| `partner` | The consolidated stream, all marketplaces in one block | A first-party consumer aggregating every market |
-
-<Note>
-Most integrations get a per-market user named after their market. Your username **is** your scope - the credentials AssetPay issues you already point at the right stream.
-</Note>
+Your ACL user is scoped to your own stream and snapshot. Reading anything else returns `NOPERM`.
 
 ## Streams & keys
 
+AssetPay issues two key names alongside your credentials:
+
 | Key | Type | Contents |
 |-----|------|----------|
-| `autoseller:items:feed` | Stream | Consolidated - every item with all marketplace prices |
-| `autoseller:items:feed:snapshot` | Hash | Current state for the consolidated stream (`itemId` → block) |
-| `autoseller:items:feed:<marketplace>` | Stream | Per-marketplace stream |
-| `autoseller:items:feed:<marketplace>:snapshot` | Hash | Current state for that marketplace |
-
-Per-market streams exist for `white_market`, `waxpeer`, `ecosteam`, `cs2dt` and `igxe`. Only markets that are actually priced emit data - today `white_market`, `waxpeer` and `ecosteam`. `cs2dt` and `igxe` are reserved: their streams exist and stay empty until they get a price source, so a consumer can connect ahead of launch and simply receive nothing.
+| `<stream>` | Stream | Item and price changes, oldest to newest |
+| `<stream>:snapshot` | Hash | Current state (`itemId` → JSON block) |
 
 ## Event format
 
@@ -66,7 +52,7 @@ The event payload - see below.
 
 ### `item.add`
 
-A new item entered the pool (or its block was refreshed). On a **per-market** stream the payload is flattened to that market's price:
+A new item entered the pool (or its block was refreshed):
 
 ```json
 {
@@ -78,35 +64,17 @@ A new item entered the pool (or its block was refreshed). On a **per-market** st
   "iconUrl": "https://...",
   "tradable": true,
   "delivery": "instant",
-  "marketplace": "ecosteam",
   "price": "12.43",
   "updatedAt": "2026-06-15T12:00:00.000Z"
 }
 ```
 
-On the **consolidated** stream, prices are nested per marketplace. An item only carries the markets it is priced on, so the set of keys varies per item:
-
-```json
-{
-  "id": "0f9c...",
-  "appid": 730,
-  "name": "AK-47 | Redline (Field-Tested)",
-  "prices": {
-    "white_market": { "price": "12.43", "updatedAt": "2026-06-15T12:00:00.000Z" },
-    "waxpeer": { "price": "12.44", "updatedAt": "2026-06-15T12:00:00.000Z" },
-    "ecosteam": { "price": "12.41", "updatedAt": "2026-06-15T12:00:00.000Z" }
-  }
-}
-```
-
-Prices differ per market because each is quoted against that market's own competitor book, under the same floor.
-
 ### `price.update`
 
-An existing item's price changed on one marketplace:
+An existing item's price changed:
 
 ```json
-{ "id": "0f9c...", "marketplace": "white_market", "price": "12.10", "updatedAt": "2026-06-15T12:05:00.000Z" }
+{ "id": "0f9c...", "price": "12.10", "updatedAt": "2026-06-15T12:05:00.000Z" }
 ```
 
 ### `item.remove`
@@ -116,6 +84,8 @@ An item left the pool (sold or pulled):
 ```json
 { "id": "0f9c..." }
 ```
+
+Payloads may carry additional internal routing fields. Read the fields you need and ignore the rest.
 
 ## Consuming the feed
 
@@ -140,10 +110,10 @@ On reconnect, re-run from step 1. The snapshot is always current, so re-seeding 
 import Redis from "ioredis";
 import { readFileSync } from "node:fs";
 
-// Your own market's stream - the one your ACL user is scoped to.
-const STREAM = "autoseller:items:feed:ecosteam";
+// The stream name AssetPay issued with your credentials.
+const STREAM = "<YOUR_FEED_STREAM>";
 
-const r = new Redis("rediss://ecosteam:<YOUR_FEED_PASSWORD>@feed.assetpay.gg:6382", {
+const r = new Redis("rediss://<YOUR_FEED_USER>:<YOUR_FEED_PASSWORD>@feed.assetpay.gg:6382", {
   tls: { ca: readFileSync("ca.crt"), servername: "feed.assetpay.gg" },
 });
 

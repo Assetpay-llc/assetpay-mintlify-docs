@@ -160,7 +160,7 @@ The `event` you're handling is the new value of `trade.status`. AssetPay dispatc
 | `failed` | Trade did not go through. No credit needed. Optionally notify the user. |
 | `canceled` | Trade was canceled before any state was applied (incl. an unaccepted offer auto-canceled past its window). No action needed. |
 | `declined` | The end user declined the Steam trade offer. No items received, no credit needed. Optionally notify the user. |
-| `reverted` | A previously completed deposit was reversed. Reverse any `preCredit` + `pendingCredit` already credited. Check `revertedBy`. |
+| `reverted` | The deposit was reversed, usually during the hold. Reverse any `preCredit` + `pendingCredit` already credited. Check `revertedBy`. |
 
 ### Withdrawal Callbacks
 
@@ -291,7 +291,7 @@ Here's the sequence of callbacks you'd receive for a typical CS2 deposit:
 4. completed  →  Hold ended, no reversal (credit pendingCredit here)
 ```
 
-If something goes wrong at any step, you'll get a `failed` callback instead of the next step. If the user declines the offer you'll get `declined`, and if it's auto-canceled after sitting unaccepted you'll get `canceled`. If a reversal happens after `completed`, you'll get `reverted`. Rust deposits skip the `hold` step entirely and go straight from `active` to `completed`.
+If something goes wrong at any step, you'll get a `failed` callback instead of the next step. If the user declines the offer you'll get `declined`, and if it's auto-canceled after sitting unaccepted you'll get `canceled`. If the items are clawed back you'll get `reverted` — normally out of `hold`, while the 7-day window is still open, so reverse any `preCredit` you already applied. Rust deposits skip the `hold` step entirely and go straight from `active` to `completed`.
 
 ## Callback Example: Complete Withdrawal Flow
 

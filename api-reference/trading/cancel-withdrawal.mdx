@@ -8,7 +8,7 @@ Requests cancellation of **every still-cancellable item** in a withdrawal, rathe
 **Authentication:** Client Token (`Authorization` header)
 
 <Note>
-CS2 (Assetpay) items only. Rust withdrawals and autoseller-sourced items have no supplier cancel API. If **every** item in the trade is in one of those lanes the call fails with `TRADE_CANCEL_UNSUPPORTED` (44); if only some are, they are simply left out of the result.
+CS2 (Assetpay) items only. Rust withdrawals and internal-sourced items have no supplier cancel API. If **every** item in the trade is in one of those lanes the call fails with `TRADE_CANCEL_UNSUPPORTED` (44); if only some are, they are simply left out of the result.
 </Note>
 
 ## Request
@@ -32,7 +32,7 @@ The supplier decides which items still qualify, so a **partial result is still a
 - `cancelled` / `failed` — how those split
 - `items[]` — one row per item the supplier reported on
 
-Items the supplier never considered (already delivered, in Steam hold, Rust, autoseller-sourced) do not appear in `items[]` at all. An item must also be at least **30 minutes old** and not yet terminal; younger items come back as `failed` with `reason: "TRADE_CANCEL_TOO_SOON"`.
+Items the supplier never considered (already delivered, in Steam hold, Rust, internal-sourced) do not appear in `items[]` at all. An item must also be at least **30 minutes old** and not yet terminal; younger items come back as `failed` with `reason: "TRADE_CANCEL_TOO_SOON"`.
 
 ## Response
 
@@ -85,6 +85,6 @@ Shared across all clients of the same merchant.
 | Code | Key | When |
 |------|-----|------|
 | 28 | `TRADE_NOT_CANCELLABLE` | The trade is not a withdrawal, or the marketplace refused the request outright. |
-| 44 | `TRADE_CANCEL_UNSUPPORTED` | Every item in the trade is Rust or autoseller-sourced, so none can be cancelled. |
+| 44 | `TRADE_CANCEL_UNSUPPORTED` | Every item in the trade is Rust or internal-sourced, so none can be cancelled. |
 | 1300 | `FORBIDDEN` | The trade does not belong to the authenticated user. |
 | 2201 | `ITEM_NOT_FOUND` | No trade matches that `tradeId` or `externalId`. |

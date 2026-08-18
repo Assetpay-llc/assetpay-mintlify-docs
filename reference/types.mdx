@@ -106,7 +106,7 @@ interface Item {
   wear?: string;                 // Float value as string
   paintSeed?: number;            // Paint seed number
   previewToken?: string;         // Steam inspect/preview token (CS2). Present on inventory and
-                                 //   autoseller-pool (self-owned) items; absent on third-party
+                                 //   internal-pool (self-owned) items; absent on third-party
                                  //   marketplace listings.
   doppler?: Doppler;             // Doppler phase details
   fade?: Fade;                   // Fade percentage details
@@ -117,7 +117,7 @@ interface Item {
   charm?: Charm;                 // Applied charm (CS2 only)
 
   // Market-specific
-  botInfo?: {                    // Holding bot identity — present on autoseller-pool market items
+  botInfo?: {                    // Holding bot identity — present on internal-pool market items
     name: string;
     avatar?: string;
     steamId?: string;

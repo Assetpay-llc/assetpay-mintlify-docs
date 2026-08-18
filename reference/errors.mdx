@@ -121,7 +121,7 @@ Returned by deposit, withdrawal, inventory, and market endpoints.
 | 33 | `STEAM_RATE_LIMITED` | 424 | Steam is rate-limiting inventory requests; retry shortly |
 | 42 | `INSUFFICIENT_STOCK` | 409 | Requested amount exceeds the available marketplace stock for this listing |
 | 43 | `MIXED_SUPPLIER_TRADE` | 409 | A single trade can't mix items from different suppliers |
-| 44 | `TRADE_CANCEL_UNSUPPORTED` | 409 | The item is Rust or autoseller-sourced, so there is no supplier cancel to call |
+| 44 | `TRADE_CANCEL_UNSUPPORTED` | 409 | The item is Rust or internal-sourced, so there is no supplier cancel to call |
 | 45 | `ITEM_OVERSTOCKED` | 409 | We already hold the maximum quantity of one of these items; refresh the inventory and retry |
 
 ## Asynchronous Trade Failure Codes

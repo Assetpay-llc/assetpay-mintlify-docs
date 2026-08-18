@@ -9,7 +9,7 @@ Merchant-facing equivalent of [`POST /client/trading/withdraw/{tradeId}/items/{i
 **Scope:** `CORE_ACCESS`
 
 <Note>
-CS2 (Assetpay) items only. Rust buys are fulfilled by a polling supplier with no cancel API, and autoseller-sourced items leave nothing to reverse upstream; both return `TRADE_CANCEL_UNSUPPORTED` (44). Only **self-trade** buys (`source: "self"`) are cancellable through this endpoint.
+CS2 (Assetpay) items only. Rust buys are fulfilled by a polling supplier with no cancel API, and internal-sourced items leave nothing to reverse upstream; both return `TRADE_CANCEL_UNSUPPORTED` (44). Only **self-trade** buys (`source: "self"`) are cancellable through this endpoint.
 </Note>
 
 ## Request
@@ -31,7 +31,7 @@ api-key: ap_...
 A cancel is only accepted when **all** of the following hold:
 
 - The item belongs to a **self-trade** (`source: "self"`) **buy** owned by the authenticated merchant.
-- The item is a **CS2 (Assetpay)** item that was not sourced from the autoseller pool.
+- The item is a **CS2 (Assetpay)** item that was not sourced from the internal pool.
 - The item is **at least 30 minutes old** (measured from when it was created).
 - The item is **not** already in a terminal state (`completed`, `failed`, `reverted`, `canceled`).
 
@@ -71,6 +71,6 @@ A cancel lands on `canceled`, not `reverted`. `reverted` is for a delivered item
 |------|-----|------|
 | 27 | `TRADE_CANCEL_TOO_SOON` | The item is younger than 30 minutes. Retry after the 30-minute window. |
 | 28 | `TRADE_NOT_CANCELLABLE` | Not cancellable: not a withdraw-type buy, already in a terminal state, or the marketplace rejected the cancel. |
-| 44 | `TRADE_CANCEL_UNSUPPORTED` | The item is Rust or autoseller-sourced, so there is no supplier cancel to call. |
+| 44 | `TRADE_CANCEL_UNSUPPORTED` | The item is Rust or internal-sourced, so there is no supplier cancel to call. |
 | 1300 | `FORBIDDEN` | The trade is not a self-trade owned by the authenticated merchant. |
 | 2201 | `ITEM_NOT_FOUND` | No item matching that `itemId` or `externalId` exists under the given trade. |
